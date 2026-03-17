@@ -21,7 +21,7 @@ namespace ReikaKalseki.BalanceTweaks {
 
 		public static Assembly modDLL;
 
-		public static bool forceAllowVisit;
+		public static bool forceAllowVisit = true;
 
         public BTMod() : base() {
             instance = this;
@@ -62,6 +62,15 @@ namespace ReikaKalseki.BalanceTweaks {
             r.roomMotionBrokenProbability = UnityEngine.Random.Range(0.25F, 0.5F); //from flat 50%
 			r.roomScannerBrokenProbability = UnityEngine.Random.Range(0F, 0.2F); //from 0-30%
 			DSUtil.log(string.Format("Adjusted room survey-broken probabilities: M={0}%, S={1}%", r.roomMotionBrokenProbability*100, r.roomScannerBrokenProbability*100));
+		}
+
+		public static void addFuelNode(List<RoomItem> li, FuelAccess f) {
+			int dist = new GalaxyMapManager().GetDistanceToClosestVisitableDungeon();
+			int has = GlobalSettings.GameState.ThePlayer.Inventory.TotalPropulsionFuel;
+			if (has < dist) {
+				f.countPropulsionFuel = Math.Max(f.countPropulsionFuel, dist-has);
+			}
+			li.Add(f);
 		}
 
 	}

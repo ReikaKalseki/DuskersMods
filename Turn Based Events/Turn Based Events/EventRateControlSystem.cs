@@ -292,7 +292,8 @@ namespace ReikaKalseki.TBE {
 					else if (tryAdvanceEvent(evt, MIN_COMMANDS_FOR_ASTEROID_WARNING+(int)(singleAsteroidEvent.timerIncomming/30F))) { //event originally has a 90s-8min timer, apply some of that -> add 3-16 moves
 						singleAsteroidEvent.warningFired = true;
 						singleAsteroidEvent.AdjustProbabilities();
-						singleAsteroidEvent.DisplayProbabilities();
+						//singleAsteroidEvent.DisplayProbabilities();
+						displayAsteroidWarning(singleAsteroidEvent);
 					}
 				}
 			}
@@ -340,11 +341,41 @@ namespace ReikaKalseki.TBE {
 				}
 			}
 			singleAsteroidEvent.CalculateProbabilities();
-			singleAsteroidEvent.DisplayProbabilities();
+			//singleAsteroidEvent.DisplayProbabilities();
+			displayAsteroidWarning(singleAsteroidEvent);
 			if (evt.asteroidGroupList == null) {
 				evt.asteroidGroupList = new List<AsteroidEvent.SingleAsteroidEvent>();
 			}
 			evt.asteroidGroupList.Add(singleAsteroidEvent);
+		}
+
+		public static void displayAsteroidWarning(AsteroidEvent.SingleAsteroidEvent evt) {
+			float num = evt.timerIncomming / 30f; //range is 90-480 -> num 3-16
+			string warning = "undefined";
+			if (num <= 5) { //3-5
+				warning = "Immediate";
+			}
+			else if (num <= 9) { //6-9
+				warning = "Short";
+			}
+			else if (num <= 13) { // 10-13
+				warning = "Moderate";
+			}
+			else { //14-16
+				warning = "Long";
+			}
+			SystemMessageManager.ShowSystemMessage($"Incoming asteroid detected at {warning} range", ConsoleMessageType.Warning);
+			int count = evt.potRoomList.Count;
+			for (int i = 0; i < count; i++) {
+				if (evt.potRoomList[i] != null) {
+					if (evt.potRoomList[i].boardingVessel && ((BoardingShip)evt.potRoomList[i]).CurrentAirlock != evt.dockedCorridor) {
+						DungeonManager.Instance.SendConsoleMessage($"\tBoarding ship has moved out of range of incomming asteroids", ConsoleMessageType.Info);
+					}
+					else {
+						DungeonManager.Instance.SendConsoleMessage($"\tRoom {evt.potRoomList[i].Label} has a {evt.potPerList[i],4:P0} chance of being hit", ConsoleMessageType.Info);
+					}
+				}
+			}
 		}
 
 		public static string warnedCloseFailure = "diclosewarnplaceholder";
