@@ -49,14 +49,21 @@ namespace ReikaKalseki.DIDrones {
                 DSUtil.log("Failed to load DI: "+e, DSUtil.diDLL);
             }
             DSUtil.log("Finished Initializing Dragon Industries", DSUtil.diDLL);
-        }
+		}
 
-        public static void onCommand(ICommandable ic, ExecutedCommand cmd, bool multi) {
+		public static void onSystemMessage(SystemMessageManager mgr, string msg, ConsoleMessageType type, SystemMessageImageType img) {
+			DSUtil.log(string.Format("Logged system message: {0}/'{1}'", type, msg), DSUtil.diDLL);
+			mgr.ShowSystemMessageInternal(msg, type, img);
+		}
+
+		public static void onCommand(ICommandable ic, ExecutedCommand cmd, bool multi) {
 			ic.ExecuteCommand(cmd, multi);
-            if (cmd.Handled)
-                CommandHistory.addCommand(cmd);
-            if (onCommandEvent != null)
-                onCommandEvent.Invoke(ic, cmd, multi);
+            if (cmd.Handled) {
+				DSUtil.log(string.Format("Logged command '{0} {1}'", cmd.Command.CommandName, string.Join(" ", cmd.Arguments.ToArray())), DSUtil.diDLL);
+				CommandHistory.addCommand(cmd);
+                if (onCommandEvent != null)
+                    onCommandEvent.Invoke(ic, cmd, multi);
+            }
 		}
 
 	}

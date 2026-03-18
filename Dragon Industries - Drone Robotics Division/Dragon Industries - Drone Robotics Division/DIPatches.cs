@@ -45,7 +45,54 @@ namespace ReikaKalseki.DIDrones {
 			}
 		}
 
+		[HarmonyPatch(typeof(SystemMessageManager))]
+		[HarmonyPatch("ShowSystemMessage", typeof(string), typeof(ConsoleMessageType))]
+		[HarmonyDebug]
+		public static class MessageHook1 {
+
+			public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
+				List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
+				try {
+					PatchLib.redirectSysMsgInternal(codes);
+					FileLog.Log("Done patch " + MethodBase.GetCurrentMethod().DeclaringType);
+				}
+				catch (Exception e) {
+					FileLog.Log("Caught exception when running patch " + MethodBase.GetCurrentMethod().DeclaringType + "!");
+					FileLog.Log(e.Message);
+					FileLog.Log(e.StackTrace);
+					FileLog.Log(e.ToString());
+				}
+				return codes.AsEnumerable();
+			}
+		}
+
+		[HarmonyPatch(typeof(SystemMessageManager))]
+		[HarmonyPatch("ShowSystemMessage", typeof(string), typeof(ConsoleMessageType), typeof(SystemMessageImageType))]
+		[HarmonyDebug]
+		public static class MessageHook2 {
+
+			public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
+				List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
+				try {
+					PatchLib.redirectSysMsgInternal(codes);
+					FileLog.Log("Done patch " + MethodBase.GetCurrentMethod().DeclaringType);
+				}
+				catch (Exception e) {
+					FileLog.Log("Caught exception when running patch " + MethodBase.GetCurrentMethod().DeclaringType + "!");
+					FileLog.Log(e.Message);
+					FileLog.Log(e.StackTrace);
+					FileLog.Log(e.ToString());
+				}
+				return codes.AsEnumerable();
+			}
+		}
+
 		static class PatchLib {
+
+			public static void redirectSysMsgInternal(List<CodeInstruction> li) {
+				int idx = InstructionHandlers.getLastOpcodeBefore(li, li.Count, OpCodes.Callvirt);
+				li[idx] = InstructionHandlers.createMethodCall("ReikaKalseki.DIDrones.DIMod", "onSystemMessage", new Type[] { typeof(SystemMessageManager), typeof(string), typeof(ConsoleMessageType), typeof(SystemMessageImageType) });
+			}
 
 			internal static void replaceMaybeInlinedFieldWithConstant(List<CodeInstruction> codes, string owner, string name, float origVal, float newVal) {
 				int idx = -1;
