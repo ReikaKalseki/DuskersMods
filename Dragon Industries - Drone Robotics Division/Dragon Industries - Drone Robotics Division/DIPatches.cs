@@ -15,7 +15,7 @@ namespace ReikaKalseki.DIDrones {
 
 		[HarmonyPatch(typeof(ConsoleWindow3))]
 		[HarmonyPatch("SendCommandToObject")]
-		[HarmonyDebug]
+		
 		public static class CommandHook {
 
 			public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
@@ -47,7 +47,7 @@ namespace ReikaKalseki.DIDrones {
 
 		[HarmonyPatch(typeof(SystemMessageManager))]
 		[HarmonyPatch("ShowSystemMessage", typeof(string), typeof(ConsoleMessageType))]
-		[HarmonyDebug]
+		
 		public static class MessageHook1 {
 
 			public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
@@ -68,7 +68,7 @@ namespace ReikaKalseki.DIDrones {
 
 		[HarmonyPatch(typeof(SystemMessageManager))]
 		[HarmonyPatch("ShowSystemMessage", typeof(string), typeof(ConsoleMessageType), typeof(SystemMessageImageType))]
-		[HarmonyDebug]
+		
 		public static class MessageHook2 {
 
 			public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {

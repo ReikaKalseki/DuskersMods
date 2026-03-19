@@ -15,7 +15,7 @@ namespace ReikaKalseki.AAE {
 
 		[HarmonyPatch(typeof(SystemMessageManager))]
 		[HarmonyPatch("ShowSystemMessageInternal")]
-		[HarmonyDebug]
+		
 		public static class MessageSoundHook {
 
 			public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {

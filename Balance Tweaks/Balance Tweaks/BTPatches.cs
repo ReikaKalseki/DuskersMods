@@ -15,7 +15,7 @@ namespace ReikaKalseki.BalanceTweaks {
 		/*
 		[HarmonyPatch(typeof(DungeonInfo))]
 		[HarmonyPatch("get_HaveVisited")]
-		[HarmonyDebug]
+		
 		public static class DisableRevisitCheck {
 
 			public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
@@ -37,7 +37,7 @@ namespace ReikaKalseki.BalanceTweaks {
 			*/
 		[HarmonyPatch(typeof(GalaxyMapManager))]
 		[HarmonyPatch("ExecuteBoardOrTravel")]
-		[HarmonyDebug]
+		
 		public static class DisableRevisitCheck1 {
 
 			public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
@@ -58,7 +58,7 @@ namespace ReikaKalseki.BalanceTweaks {
 
 		[HarmonyPatch(typeof(GalaxyMapManager))]
 		[HarmonyPatch("BoardCurrentDungeon")]
-		[HarmonyDebug]
+		
 		public static class DisableRevisitCheck2 {
 
 			public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
@@ -79,7 +79,7 @@ namespace ReikaKalseki.BalanceTweaks {
 
 		[HarmonyPatch(typeof(GalaxyMapManager))]
 		[HarmonyPatch("GetDistanceToClosestVisitableDungeon")]
-		[HarmonyDebug]
+		
 		public static class DisableRevisitCheck3 {
 
 			public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
@@ -100,7 +100,7 @@ namespace ReikaKalseki.BalanceTweaks {
 
 		[HarmonyPatch(typeof(DungeonRoom))]
 		[HarmonyPatch(MethodType.Constructor, typeof(Coordinate2D), typeof(Coordinate2D), typeof(System.Random))]
-		[HarmonyDebug]
+		
 		public static class HookWreckRoomInit {
 
 			public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
@@ -121,8 +121,8 @@ namespace ReikaKalseki.BalanceTweaks {
 
 		[HarmonyPatch(typeof(DungeonBuilder))]
 		[HarmonyPatch("BuildDungeon")]
-		[HarmonyDebug]
-		public static class FuelAmountGuarantee {
+		
+		public static class FuelAmountGuarantee1 {
 
 			public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
 				List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
@@ -142,7 +142,20 @@ namespace ReikaKalseki.BalanceTweaks {
 			}
 		}
 
-		static class PatchLib {
+		internal static class PatchLib {
+
+			internal static bool redirectScrapCost(Type t) {
+				PropertyInfo p = t.GetProperty("ScrapCost");
+				if (p == null)
+					return false;
+				InstructionHandlers.patchMethod(BTMod.instance.harmony, p.GetGetMethod(), BTMod.modDLL, li => {
+					li.Clear();
+					li.Add(new CodeInstruction(OpCodes.Ldarg_0));
+					li.Add(InstructionHandlers.createMethodCall("ReikaKalseki.BalanceTweaks.BTMod", "getModScrapCost", new Type[] { typeof(IModification) }));
+					li.Add(new CodeInstruction(OpCodes.Ret));
+				});
+				return true;
+			}
 
 			internal static void redirectShipVisited(List<CodeInstruction> codes) {
 				int idx = InstructionHandlers.getInstruction(codes, 0, 0, OpCodes.Callvirt, "DungeonInfo", "get_HaveVisited", new Type[0]);

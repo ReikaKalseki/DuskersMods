@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 
 using ReikaKalseki.DIDrones;
@@ -68,6 +69,7 @@ namespace ReikaKalseki.TBE {
 		};
 
 		public static int commandsSinceEventProgression { get; private set; }
+		public static int commandsSinceTransporterProgression { get; private set; }
 
 		public static float currentBonusFactor { get; private set; }
 
@@ -83,7 +85,8 @@ namespace ReikaKalseki.TBE {
 					return;
 				int cost = commandCostTable.ContainsKey(id) ? commandCostTable[id] : 1;
 				commandsSinceEventProgression += cost;
-				DSUtil.log(string.Format("Processing command type '{0}' (+{1}), now {2} since last event progression", id, cost, commandsSinceEventProgression));
+				commandsSinceTransporterProgression += cost;
+				DSUtil.log(string.Format("Processing command type '{0}' (+{1}), now {2}/{3} since last progression", id, cost, commandsSinceEventProgression, commandsSinceTransporterProgression));
 			}
 		}
 
@@ -127,18 +130,30 @@ namespace ReikaKalseki.TBE {
 			int needed = necessaryCommands+bonusNet;
 			string frac = string.Format("{0}/[{1} (@ {2} -> +{3}={4})]", commandsSinceEventProgression, necessaryCommands, currentBonusFactor, bonusNet, needed);
 			if (commandsSinceEventProgression < needed) {
-				DSUtil.log("Event "+evtn+" failed to progress because command threshold not met: "+ frac);
+				DSUtil.log("Event " + evtn + " failed to progress because command threshold not met: " + frac);
 				return false;
 			}
-			DSUtil.log("Event "+evtn+" progressed at command threshold "+frac);
+			DSUtil.log("Event " + evtn + " progressed at command threshold " + frac);
 			randomizeBonus();
 			commandsSinceEventProgression = 0;
 			return true;
 		}
 
+		private static bool tryAdvanceTransporter(float originalTimeDelay) {
+			int needed = Mathf.RoundToInt(originalTimeDelay/20); //one move per 20s of original delay, typically [120-300] or [240-600] -> [6-15] or [12-30]
+			string frac = string.Format("{0}/{1}", commandsSinceTransporterProgression, needed);
+			if (commandsSinceTransporterProgression < needed) {
+				DSUtil.log("Transporter failed to progress because command threshold not met: " + frac);
+				return false;
+			}
+			DSUtil.log("Transporter progressed at command threshold " + frac);
+			commandsSinceTransporterProgression = 0;
+			return true;
+		}
+
 		private static void randomizeBonus() {
 			currentBonusFactor = UnityEngine.Random.Range(0F, 1F);
-			DSUtil.log("New bonus-move factor: " + (currentBonusFactor*100).ToString("0.0") + "%");
+			DSUtil.log("New bonus-move factor: " + (currentBonusFactor * 100).ToString("0.0") + "%");
 		}
 
 		public static void tickAirlockSeal(AirlockSealFailEvent evt) {
@@ -289,7 +304,7 @@ namespace ReikaKalseki.TBE {
 							}
 						}
 					}
-					else if (tryAdvanceEvent(evt, MIN_COMMANDS_FOR_ASTEROID_WARNING+(int)(singleAsteroidEvent.timerIncomming/30F))) { //event originally has a 90s-8min timer, apply some of that -> add 3-16 moves
+					else if (tryAdvanceEvent(evt, MIN_COMMANDS_FOR_ASTEROID_WARNING + (int)(singleAsteroidEvent.timerIncomming / 30F))) { //event originally has a 90s-8min timer, apply some of that -> add 3-16 moves
 						singleAsteroidEvent.warningFired = true;
 						singleAsteroidEvent.AdjustProbabilities();
 						//singleAsteroidEvent.DisplayProbabilities();
@@ -303,7 +318,7 @@ namespace ReikaKalseki.TBE {
 		public static void performAsteroids(AsteroidEvent evt) {
 			if (!tryAdvanceEvent(evt, COMMANDS_FOR_ASTEROID_QUEUE))
 				return;
-				AsteroidEvent.SingleAsteroidEvent singleAsteroidEvent = new AsteroidEvent.SingleAsteroidEvent(evt.rnd)
+			AsteroidEvent.SingleAsteroidEvent singleAsteroidEvent = new AsteroidEvent.SingleAsteroidEvent(evt.rnd)
 		{
 				timerIncomming = evt.rnd.NextFloat(90f, 480f)
 			};
@@ -469,5 +484,111 @@ namespace ReikaKalseki.TBE {
 				r.IsInPreNaturalRadiationState = true; //re-set state and try again next time
 		}
 
+		public static void tickTransporterUpgrade(TransporterShipUpgrade upg) {
+			if (upg.isProcessingDelayedJump) {
+				upg.delayBeforeJump -= Time.deltaTime;
+				if (upg.delayBeforeJump <= 0f) {
+					foreach (Drone drone in upg.delayedTransportDroneList) {
+						upg.JumpDroneToRoom(drone, upg.delayedTransportDestinationRoom);
+					}
+					upg.isProcessingDelayedJump = false;
+					upg.delayedTransportDestinationRoom = null;
+					upg.delayedTransportDroneList.Clear();
+				}
+			}
+			if (GlobalSettings.MissionStarted && !GlobalSettings.IsGamePaused && upg.CanTransport) {
+				int count = upg.receiverDataList.Count;
+				for (int i = 0; i < count; i++) {
+					TransporterShipUpgrade.ReceiverData receiverData = upg.receiverDataList[i];
+					//receiverData.delayUntilEventChange -= Time.deltaTime;
+					if (!receiverData.receiver.IsOffline) {
+						switch (receiverData.CurrentStrength) {
+							case TransporterShipUpgrade.ReceiverStrengthEnum.Strong:
+								if (tryAdvanceTransporter(receiverData.delayUntilEventChange)) {
+									receiverData.delayUntilEventChange = UnityEngine.Random.Range(120f, 300f) * upg.strengthErraticFactor;
+									receiverData.CurrentStrength = TransporterShipUpgrade.ReceiverStrengthEnum.Weak;
+									receiverData.receiver.SetDamaged();
+									receiverData.receiver.roomLocation.UpdateTransporterReceiver(TransporterShipUpgrade.ReceiverStrengthEnum.Weak);
+									SystemMessageManager.ShowSystemMessage("Transporter receiver signal in room " + receiverData.receiver.roomLocation.Label + " is weak.", ConsoleMessageType.Warning);
+								}
+								break;
+							case TransporterShipUpgrade.ReceiverStrengthEnum.Weak:
+								if (tryAdvanceTransporter(receiverData.delayUntilEventChange)) {
+									if (UnityEngine.Random.Range(0, 4) == 0) {
+										receiverData.CurrentStrength = TransporterShipUpgrade.ReceiverStrengthEnum.Strong;
+										receiverData.delayUntilEventChange = UnityEngine.Random.Range(240f, 600f) * upg.strengthErraticFactor;
+										receiverData.receiver.SetActive();
+										receiverData.receiver.roomLocation.UpdateTransporterReceiver(TransporterShipUpgrade.ReceiverStrengthEnum.Strong);
+										SystemMessageManager.ShowSystemMessage("Transporter receiver signal in room " + receiverData.receiver.roomLocation.Label + " is strong.", ConsoleMessageType.Notification);
+									}
+									else {
+										receiverData.CurrentStrength = TransporterShipUpgrade.ReceiverStrengthEnum.None;
+										receiverData.delayUntilEventChange = UnityEngine.Random.Range(120f, 360f);
+										receiverData.receiver.IsResponding = false;
+										upg.ReceiverWentOffline();
+										receiverData.receiver.roomLocation.UpdateTransporterReceiver(TransporterShipUpgrade.ReceiverStrengthEnum.None);
+										SystemMessageManager.ShowSystemMessage("Lost transporter receiver signal in room " + receiverData.receiver.roomLocation.Label + ".", ConsoleMessageType.Warning);
+									}
+								}
+								break;
+							case TransporterShipUpgrade.ReceiverStrengthEnum.None:
+								if (tryAdvanceTransporter(receiverData.delayUntilEventChange)) {
+									if (UnityEngine.Random.Range(0, 4) == 0) {
+										receiverData.CurrentStrength = TransporterShipUpgrade.ReceiverStrengthEnum.Weak;
+										receiverData.delayUntilEventChange = UnityEngine.Random.Range(120f, 300f) * upg.strengthErraticFactor;
+										receiverData.receiver.SetDamaged();
+										receiverData.receiver.roomLocation.UpdateTransporterReceiver(TransporterShipUpgrade.ReceiverStrengthEnum.Weak);
+										SystemMessageManager.ShowSystemMessage("Reacquired a weak transporter receiver signal in room " + receiverData.receiver.roomLocation.Label + ".", ConsoleMessageType.Benefit);
+										receiverData.receiver.IsResponding = true;
+										upg.ReceiverCameOnline();
+									}
+									else {
+										receiverData.CurrentStrength = TransporterShipUpgrade.ReceiverStrengthEnum.None;
+										receiverData.receiver.roomLocation.UpdateTransporterReceiver(TransporterShipUpgrade.ReceiverStrengthEnum.None);
+										receiverData.delayUntilEventChange = UnityEngine.Random.Range(120f, 360f) * upg.strengthErraticFactor;
+									}
+								}
+								break;
+						}
+					}
+					else if (tryAdvanceTransporter(receiverData.delayUntilEventChange)) {
+						receiverData.receiver.BringOnline();
+						receiverData.receiver.roomLocation.ExternallyMarkAsOnSchematic();
+						receiverData.CurrentStrength = TransporterShipUpgrade.ReceiverStrengthEnum.Weak;
+						receiverData.receiver.roomLocation.UpdateTransporterReceiver(TransporterShipUpgrade.ReceiverStrengthEnum.Weak);
+						receiverData.delayUntilEventChange = UnityEngine.Random.Range(120f, 300f) * upg.strengthErraticFactor;
+						receiverData.receiver.SetDamaged();
+						receiverData.receiver.RefreshIcon();
+						SystemMessageManager.ShowSystemMessage("New transporter receiver signal in room " + receiverData.receiver.roomLocation.Label + " detected.", ConsoleMessageType.Notification);
+						upg.ReceiverCameOnline();
+					}
+				}
+				if (upg.isDeadAir) {
+					upg.timerForceReceiverOnline -= Time.deltaTime;
+					if (upg.timerForceReceiverOnline <= 0f) {
+						Debug.Log("******** Forced Receiver Online ********");
+						int index = UnityEngine.Random.Range(0, upg.receiverDataList.Count);
+						TransporterShipUpgrade.ReceiverData receiverData2 = upg.receiverDataList[index];
+						receiverData2.CurrentStrength = TransporterShipUpgrade.ReceiverStrengthEnum.Weak;
+						receiverData2.receiver.roomLocation.UpdateTransporterReceiver(TransporterShipUpgrade.ReceiverStrengthEnum.Weak);
+						receiverData2.delayUntilEventChange = UnityEngine.Random.Range(120f, 300f) * upg.strengthErraticFactor;
+						receiverData2.receiver.SetDamaged();
+						SystemMessageManager.ShowSystemMessage("Reacquired a weak transporter receiver signal in room " + receiverData2.receiver.roomLocation.Label + ".", ConsoleMessageType.Benefit);
+						receiverData2.receiver.IsResponding = true;
+						upg.ReceiverCameOnline();
+					}
+				}
+			}
+			if (!GlobalSettings.IsGamePaused && !upg.canJump) {
+				upg.timeTilNextJump -= Time.deltaTime;
+				if (upg.timeTilNextJump <= 0f) {
+					upg.timeTilNextJump = 0f;
+					upg.canJump = true;
+				}
+			}
+			if (upg.failSafe) {
+				upg.timerLastAttempt -= Time.deltaTime;
+			}
+		}
 	}
 }

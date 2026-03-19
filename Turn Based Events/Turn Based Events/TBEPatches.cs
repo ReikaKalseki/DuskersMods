@@ -15,7 +15,7 @@ namespace ReikaKalseki.TBE {
 
 		[HarmonyPatch(typeof(BaseGameEvent))]
 		[HarmonyPatch("Update")]
-		[HarmonyDebug]
+		
 		public static class BaseGameEventUpdate {
 
 			public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
@@ -36,7 +36,7 @@ namespace ReikaKalseki.TBE {
 
 		[HarmonyPatch(typeof(AirlockSealFailEvent))]
 		[HarmonyPatch("Update")]
-		[HarmonyDebug]
+		
 		public static class AirlockEventTick {
 
 			public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
@@ -57,7 +57,7 @@ namespace ReikaKalseki.TBE {
 
 		[HarmonyPatch(typeof(AirlockSealFailEvent))]
 		[HarmonyPatch("ExecuteEvent")]
-		[HarmonyDebug]
+		
 		public static class AirlockEventExec {
 
 			public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
@@ -78,7 +78,7 @@ namespace ReikaKalseki.TBE {
 
 		[HarmonyPatch(typeof(AsteroidEvent))]
 		[HarmonyPatch("Update")]
-		[HarmonyDebug]
+		
 		public static class AsteroidEventTick {
 
 			public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
@@ -99,7 +99,7 @@ namespace ReikaKalseki.TBE {
 
 		[HarmonyPatch(typeof(AsteroidEvent))]
 		[HarmonyPatch("ExecuteEvent")]
-		[HarmonyDebug]
+		
 		public static class AsteroidEventExec {
 
 			public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
@@ -120,7 +120,7 @@ namespace ReikaKalseki.TBE {
 
 		[HarmonyPatch(typeof(CloseCommandEvent))]
 		[HarmonyPatch("ExecuteEvent")]
-		[HarmonyDebug]
+		
 		public static class CloseCommandEventExec {
 
 			public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
@@ -141,7 +141,7 @@ namespace ReikaKalseki.TBE {
 
 		[HarmonyPatch(typeof(DoorFailEvent))]
 		[HarmonyPatch("ExecuteEvent")]
-		[HarmonyDebug]
+		
 		public static class DoorFailEventExec {
 
 			public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
@@ -162,7 +162,7 @@ namespace ReikaKalseki.TBE {
 
 		[HarmonyPatch(typeof(RoomDestroyEvent))]
 		[HarmonyPatch("ExecuteEvent")]
-		[HarmonyDebug]
+		
 		public static class PipeBreakEventExec {
 
 			public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
@@ -183,7 +183,7 @@ namespace ReikaKalseki.TBE {
 
 		[HarmonyPatch(typeof(Room))]
 		[HarmonyPatch("Update")]
-		[HarmonyDebug]
+		
 		public static class RoomRadiateRedirect {
 
 			public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {

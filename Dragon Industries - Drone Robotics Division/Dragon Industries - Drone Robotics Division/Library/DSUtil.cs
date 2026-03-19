@@ -91,7 +91,7 @@ namespace ReikaKalseki.DIDrones {
 			if (indent > 0) {
 				s = s.PadLeft(s.Length+indent, ' ');
 			}
-			UnityEngine.Debug.Log(id+": "+s);
+			UnityEngine.Debug.Log(string.Format("[{2}] {1}: {0}", s, id, DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss.fff")));
 		}
     
 	    public static bool canUseDebug() {

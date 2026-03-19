@@ -435,7 +435,12 @@ namespace ReikaKalseki.DIDrones
                 obj = go.AddComponent<C>();
 			return obj;
 
-        }
-		
+		}
+
+		public static int getDistance(this DungeonInfo dg) {
+			DungeonInfo at = GlobalSettings.GameState.ThePlayer.CurrentDockedDungeon;
+			return GalaxyMapManager.CalculateDungeonDistanceInDays(at.Coordinates, dg.Coordinates);
+		}
+
 	}
 }

@@ -45,5 +45,6 @@ $RECYCLE.BIN/
 .vs/*
 *.sln
 *.csproj
+*.sdsettings
 
 npp session
