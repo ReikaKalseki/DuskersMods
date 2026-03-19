@@ -72,7 +72,7 @@ namespace ReikaKalseki.DIDrones {
 		        	if ((a != di || acceptDI || allowDIDLL) && a != gameDLL && a != gameDLL2 && a.Location.Contains("BepInEx"))
 		                return a;
 		        }
-		        log("Could not find valid mod assembly: "+sf.Select<StackFrame, string>(s => s.GetMethod()+" in "+s.GetMethod().DeclaringType).toDebugString("\n"), diDLL);
+		        log("Could not find valid mod assembly: "+sf.getTrace(), diDLL);
 	    	}
 	    	catch (Exception e) {
 	    		log("Failed to find a DLL due to an exception: "+e, diDLL);

@@ -15,6 +15,7 @@ using System.Collections.ObjectModel;
 using DSMFramework;
 using DSMFramework.Modding;
 using UpgradeExpansions;
+using System.Diagnostics;
 
 namespace ReikaKalseki.Upgrades {
 
@@ -60,6 +61,10 @@ namespace ReikaKalseki.Upgrades {
 				DSUtil.log("Failed to load UpgradeExpansions: " + e);
 			}
 			DSUtil.log("Finished Initializing UpgradeExpansions");
+		}
+
+		public static void onCreateUpgrade() {
+			//DSUtil.log("Recorded MakeUpgrade() call from\n" + new StackTrace().GetFrames().getTrace());
 		}
 
 	}

@@ -73,7 +73,7 @@ namespace UpgradeExpansions {
 	public class ObjectRepairUpgradeContainer : RefillableCustomDroneUpgradeContainer<ObjectRepairUpgrade> {
 
 		public ObjectRepairUpgradeContainer() : base(
-			new UpgradeRefillDefinition(1, 1, "repair kits"),
+			new UpgradeRefillDefinition(1, 1, "repair kit"),
 			"Installation Restoration",
 			DroneUpgradeClass.Other,
 			new CustomCommandDefinition("repair",

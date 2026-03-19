@@ -14,7 +14,8 @@ using UnityEngine;
 namespace ReikaKalseki.DIDrones {
 
     [BepInPlugin("ReikaKalseki.DIMod", "Dragon Industries Drone Robotics Division", "1.0.0")]
-    public class DIMod : BaseUnityPlugin {
+	[BepInDependency("DSMFramework")]
+	public class DIMod : BaseUnityPlugin {
 
         public static DIMod instance;
 

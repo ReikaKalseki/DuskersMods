@@ -68,7 +68,7 @@ namespace ReikaKalseki.DIDrones {
 		public readonly UpgradeRefillDefinition definition;
 
 		public RefillCustomUpgrade(UpgradeRefillDefinition def) {
-			_name = string.Format("Add {0} {1}s", def.increaseAmount, def.unitName); //Label of the modification in the menu
+			_name = string.Format("Add {0} {1}{2}", def.increaseAmount, def.unitName, def.increaseAmount == 1 ? "" : "s"); //Label of the modification in the menu
 			definition = def;
 		}
 

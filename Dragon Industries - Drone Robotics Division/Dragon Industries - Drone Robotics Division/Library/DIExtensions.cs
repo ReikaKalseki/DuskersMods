@@ -10,6 +10,7 @@ using System.Collections.Generic;
 
 using UnityEngine;
 using UnityEngine.Serialization;
+using System.Diagnostics;
 
 namespace ReikaKalseki.DIDrones
 {
@@ -435,6 +436,10 @@ namespace ReikaKalseki.DIDrones
                 obj = go.AddComponent<C>();
 			return obj;
 
+		}
+
+		public static string getTrace(this StackFrame[] sf) {
+			return sf.Select<StackFrame, string>(s => s.GetMethod() + " in " + s.GetMethod().DeclaringType).toDebugString("\n");
 		}
 
 		public static int getDistance(this DungeonInfo dg) {

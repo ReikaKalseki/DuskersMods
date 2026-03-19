@@ -11,6 +11,7 @@ using DSMFramework;
 using DSMFramework.Modding;
 using System.Security.Policy;
 using System.Text.RegularExpressions;
+using System.Diagnostics;
 
 namespace ReikaKalseki.DIDrones {
 
@@ -78,11 +79,12 @@ namespace ReikaKalseki.DIDrones {
 		public virtual void register() {
 			//Registers our upgrade in the game
 			ModUpgradeManager.Manager.RegisterDroneUpgrade(this);
+			DSUtil.log("Added custom drone upgrade '"+ GetType().Name+"' ("+(this is RefillableContainer) +")");
 		}
 
 		public sealed override BaseDroneUpgrade MakeUpgrade() {
 			//Example all implementations should follow for creating a new upgrade instance
-
+			//DSUtil.log("Recorded MakeUpgrade() call for "+this.GetType().Name+" from\n"+ new StackTrace().GetFrames().getTrace());
 			ConstructorInfo ctr = typeof(T).GetConstructor(new Type[]{typeof(DroneUpgradeDefinition), typeof(ModDroneUpgradeContainer) });
 			if (ctr == null)
 				throw new Exception("Drone upgrade '" + Name + "' has no valid constructor");

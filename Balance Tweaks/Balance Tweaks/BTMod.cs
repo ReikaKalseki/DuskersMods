@@ -69,15 +69,15 @@ namespace ReikaKalseki.BalanceTweaks {
 					"OverloadRechargeMod",
 					"ProbeStealthMod",
 					"RadiationDetectorMod",
-					"RepairDroneUpgradeMod",
+					//"RepairDroneUpgradeMod",
 					"RepairDroneVideoMod",
-					"RepairFullHpMod",
+					//"RepairFullHpMod",
 					"RepairHpMod",
 					"RepairShieldMod",
 					"RepairShipSlotMod",
-					"RepairShipUpgradeMod",
+					//"RepairShipUpgradeMod",
 					"RepairShipVisualMod",
-					"ScrapMod",
+					//"ScrapMod",
 					"ShieldRadiationMod",
 					"ShieldRechargeMod",
 					"SonicRechargeMod",
@@ -92,8 +92,12 @@ namespace ReikaKalseki.BalanceTweaks {
 				if (File.Exists(cfg)) {
 					string[] lines = File.ReadAllLines(cfg);
 					foreach (string s in lines) {
-						string[] parts = s.Split(',');
+						string[] parts = s.Split('=');
 						string mod = parts[0];
+						if (!modScrapCosts.ContainsKey(mod)) {
+							DSUtil.log("Unrecognized scrap cost in config: '"+mod+"'; set:\n"+modScrapCosts.Keys.toDebugString());
+							continue;
+						}
 						int at = modScrapCosts[mod];
 						int put = int.Parse(parts[1]);
 						if (at != put) {
@@ -155,7 +159,7 @@ namespace ReikaKalseki.BalanceTweaks {
 		private static void getModDefaultCostAndPatchClass(Type t) {
 			string name = t.Name;
 			name = name.Substring(0, name.Length - 3);
-			IModification mod = (IModification)Activator.CreateInstance(t);
+			IModification mod = t == typeof(BaseResupplyMod) ? new AddMotionSensorsMod() : (IModification)Activator.CreateInstance(t);
 			int ret = -mod.ScrapCost;
 			if (BTPatches.PatchLib.redirectScrapCost(t)) {
 				modScrapCosts[name] = ret;
@@ -164,7 +168,14 @@ namespace ReikaKalseki.BalanceTweaks {
 
 		public static int getModScrapCost(IModification mod) {
 			string n = mod.GetType().Name;
-			return -modScrapCosts[n.Substring(0, n.Length-3)];
+			n = n.Substring(0, n.Length - 3);
+			if (!modScrapCosts.ContainsKey(n) && mod is BaseResupplyMod)
+				n = "BaseResupply";
+			if (!modScrapCosts.ContainsKey(n)) {
+				DSUtil.log("Failed to fetch scrap cost of modification "+mod.DisplayName+" ("+mod.GetType().Name+") ["+n+"]!");
+				return 5;
+			}
+			return -modScrapCosts[n];
 		}
 
 	}
