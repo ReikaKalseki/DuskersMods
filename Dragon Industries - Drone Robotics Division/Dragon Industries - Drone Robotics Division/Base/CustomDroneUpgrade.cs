@@ -40,6 +40,14 @@ namespace ReikaKalseki.DIDrones {
 				SendConsoleResponseMessage("Invalid parameters. Ex: " + ((CommandableContainer)container).commandData.Example, ConsoleMessageType.Warning);
 				return;
 			}
+
+			if (this is RefillableCustomDroneUpgrade r) {
+				if (r.Quantity <= 0 || !r.UpgradeUsed()) {
+					SendConsoleResponseMessage("No "+ ((RefillableContainer)container).refill.unitName + "s available!", ConsoleMessageType.Warning);
+					return;
+				}
+			}
+
 			cmd.Handled = true;
 
 			if (performAction(cmd)) {

@@ -15,48 +15,56 @@ namespace UpgradeExpansions {
 
 	public class ObjectRepairUpgrade : RefillableCustomDroneUpgrade {
 
+		private static Dictionary<string, Type> typeMap = new Dictionary<string, Type>(){
+			{"door", typeof(Door) },
+			{"airlock", typeof(Door) },
+			{"generator", typeof(DungeonPowerInlet) },
+			{"power", typeof(DungeonPowerInlet) },
+			{"terminal", typeof(DungeonTerminal) },
+			{"console", typeof(DungeonTerminal) },
+			{"gun", typeof(DungeonDefense) },
+			{"turret", typeof(DungeonDefense) },
+		};
+
 		public ObjectRepairUpgrade(DroneUpgradeDefinition def, ModDroneUpgradeContainer c) : base(def, c) {
 
 		}
 
 		protected override bool performAction(ExecutedCommand cmd) {
-			string room = cmd.Arguments[cmd.Arguments.Count-2];
 			string type = cmd.Arguments[cmd.Arguments.Count-1];
-			if (drone.CurrentRoom != null && drone.CurrentRoom.LabelSimple != room) {
-				Room target = WorldUtil.findRoom(room);
-				if (target != null)
-					drone.NavigateToAndExecuteCommand(target);
-				else
-					SendConsoleResponseMessage("Specified room '" + room + "' not found!", ConsoleMessageType.Warning);
+			Type obj = typeMap.ContainsKey(type) ? typeMap[type] : null;
+			if (obj == null) {
+				SendConsoleResponseMessage("Unknown object type '" + type + "'. Valid types: " + typeMap.Keys.toDebugString(), ConsoleMessageType.Warning);
 				return false;
 			}
-			if (door != null && door.corridor.containsRoom(drone.CurrentRoom)) {
-				var bounds = door.corridor.GetComponent<Collider>().bounds;
-				bounds.Expand(new Vector3(0.3f, 0.3f, 0.3f));
-				if (bounds.Intersects(drone.GetComponent<Collider>().bounds)) {
-					if (door.powered) {
-						SendConsoleResponseMessage("Door " + target + " already powered", ConsoleMessageType.Info);
-						return false;
-					}
-					else {
-						if (Quantity <= 0 || !UpgradeUsed()) {
-							SendConsoleResponseMessage("Charges depleted, unable to power door", ConsoleMessageType.Warning);
-							return false;
-						}
-
-						SendConsoleResponseMessage("Successfully powered door " + target, ConsoleMessageType.Benefit);
-						door.power(true);
-						return true;
-
-					}
+			object target = obj == typeof(Door) ? null : drone.CurrentRoom.GetRoomItem(obj, false);
+			string rname = drone.CurrentRoom.LabelSimple;
+			if (target == null) {
+				SendConsoleResponseMessage("No object of type '" + type + "' found in room " + rname, ConsoleMessageType.Warning);
+				return false;
+			}
+			Bounds bounds = (target is Door d ? d.corridor : (MonoBehaviour)target).GetComponent<Collider>().bounds;
+			bounds.Expand(new Vector3(0.3f, 0.3f, 0.3f));
+			if (bounds.Intersects(drone.GetComponent<Collider>().bounds)) {
+				bool dead = target is Door dr ? dr.isDead : ((RoomItem)target).IsDead;
+				if (dead) {
+					if (target is Door dr2)
+						dr2.repair();
+					else
+						((IBreakable)target).Fix(out string msg);
+					SendConsoleResponseMessage("Successfully repaired " + type + " in room " + rname, ConsoleMessageType.Benefit);
+					return true;
 				}
 				else {
-					drone.NavigateToAndExecuteCommand(door.corridor.gameObject, cmd, CollisionType.BoundsIntesect);
+					SendConsoleResponseMessage("Object does not need repair", ConsoleMessageType.Info);
 					return false;
 				}
 			}
 			else {
-				SendConsoleResponseMessage("Specified room '" + room + "' not found!", ConsoleMessageType.Warning);
+				if (target is Door dr2)
+					drone.NavigateToAndExecuteCommand(dr2.corridor.gameObject, cmd, CollisionType.BoundsIntesect);
+				else
+					drone.NavigateToAndExecuteCommand((RoomItem)target, cmd, CollisionType.BoundsIntesect);
 				return false;
 			}
 		}
@@ -70,8 +78,7 @@ namespace UpgradeExpansions {
 			DroneUpgradeClass.Other,
 			new CustomCommandDefinition("repair",
 				"Allows your drone to repair broken installations like doors, power taps and terminals.",
-				"r6 terminal",
-				new Regex("^r[0-9]+$"),
+				"terminal",
 				new Regex("^[a-zA-Z]+$")),
 			8, //purchase cost
 			0,

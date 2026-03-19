@@ -442,5 +442,16 @@ namespace ReikaKalseki.DIDrones
 			return GalaxyMapManager.CalculateDungeonDistanceInDays(at.Coordinates, dg.Coordinates);
 		}
 
+		public static void repair(this Door d) {
+			d.isDead = false;
+			d.currentHitPoints = d.TotalHitpoints;
+			if (GlobalSettings.cameraMode == CameraMode.Schematic) {
+				d.sliderARenderer.material.color = d.SchematicViewColor;
+				d.sliderBRenderer.material.color = d.SchematicViewColor;
+			}
+			d.overlayARenderer.material.color = d.DroneViewColor;
+			d.overlayBRenderer.material.color = d.DroneViewColor;
+		}
+
 	}
 }

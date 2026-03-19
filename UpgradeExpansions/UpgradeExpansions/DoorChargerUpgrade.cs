@@ -23,7 +23,7 @@ namespace UpgradeExpansions {
 			string target = cmd.Arguments[cmd.Arguments.Count-1];
 			Door door = WorldUtil.findDoor(target);
 			if (door != null && door.corridor.containsRoom(drone.CurrentRoom)) {
-				var bounds = door.corridor.GetComponent<Collider>().bounds;
+				Bounds bounds = door.corridor.GetComponent<Collider>().bounds;
 				bounds.Expand(new Vector3(0.3f, 0.3f, 0.3f));
 				if (bounds.Intersects(drone.GetComponent<Collider>().bounds)) {
 					if (door.powered) {
@@ -31,15 +31,9 @@ namespace UpgradeExpansions {
 						return false;
 					}
 					else {
-						if (Quantity <= 0 || !UpgradeUsed()) {
-							SendConsoleResponseMessage("Charges depleted, unable to power door", ConsoleMessageType.Warning);
-							return false;
-						}
-
 						SendConsoleResponseMessage("Successfully powered door " + target, ConsoleMessageType.Benefit);
 						door.power(true);
 						return true;
-
 					}
 				}
 				else {
