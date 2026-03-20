@@ -45,6 +45,10 @@ namespace ReikaKalseki.DIDrones {
                     FileLog.Log(ex.StackTrace);
                     FileLog.Log(ex.ToString());
                 }
+
+                for (int i = 0; i <= 12; i++) {
+                    new ChangeDroneCallsignMod(i);
+				}
             }
             catch (Exception e) {
                 DSUtil.log("Failed to load DI: "+e, DSUtil.diDLL);
@@ -74,6 +78,10 @@ namespace ReikaKalseki.DIDrones {
             if (ii != null)
                 DSUtil.log("Item data: name="+ii.Name+" class="+ ii.GetType().Name+", inv type="+Enum.GetName(typeof(InventoryTypeEnum), ii.InventoryType));
 		}
+
+        public static void hookDroneSounds(Drone d) {
+             // no longer necessary d.setCallsign(GameAudio.SoundEnum.DroneCS_12);
+        }
 
 	}
 }

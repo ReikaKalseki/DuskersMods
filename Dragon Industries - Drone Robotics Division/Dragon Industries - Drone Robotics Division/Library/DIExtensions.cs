@@ -495,5 +495,12 @@ namespace ReikaKalseki.DIDrones {
 			return typeof(BaseDroneUpgrade).IsAssignableFrom(ii.GetType());
 		}
 
+		public static void setCallsign(this Drone d, int idx) {
+			d.CSID = idx;
+			d.soundRCallSign = (GameAudio.SoundEnum)((int)GameAudio.SoundEnum.DroneCS_1 + idx);
+			d.asRCallSign.clip = GameAudio.GetClip(d.soundRCallSign);
+			d.asRCallSign.volume = GameAudio.VolumeMultiplier(d.soundRCallSign, GameAudio.DroneCallSignalVolume);
+		}
+
 	}
 }

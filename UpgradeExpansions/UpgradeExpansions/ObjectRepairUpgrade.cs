@@ -87,7 +87,7 @@ namespace ReikaKalseki.Upgrades {
 
 		public ObjectRepairUpgradeContainer() : base(
 			new UpgradeRefillDefinition(1, 1, "repair kit"),
-			"Installation Restoration",
+			"Repair",
 			DroneUpgradeClass.Other,
 			new CustomCommandDefinition("repair",
 				"Allows your drone to repair broken installations like doors, power taps and terminals.",
