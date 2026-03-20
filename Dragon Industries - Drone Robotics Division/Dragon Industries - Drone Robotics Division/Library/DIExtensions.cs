@@ -491,5 +491,9 @@ namespace ReikaKalseki.DIDrones {
 			u._currentBaseColor = u.WorkingColor;
 		}
 
+		public static bool isDroneUpgrade(this IInventoryItem ii) {
+			return typeof(BaseDroneUpgrade).IsAssignableFrom(ii.GetType());
+		}
+
 	}
 }

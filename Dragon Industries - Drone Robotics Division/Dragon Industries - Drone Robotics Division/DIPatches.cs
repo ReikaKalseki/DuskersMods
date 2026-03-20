@@ -87,14 +87,51 @@ namespace ReikaKalseki.DIDrones {
 			}
 		}
 
+		[HarmonyPatch(typeof(BoardingConfigInventorySlot))]
+		[HarmonyPatch("SetInventoryItem", typeof(IInventoryItem))]
+		[HarmonyDebug]
+		public static class BoardingUIInvSlotSetFix {
+
+			public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
+				List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
+				try {
+					/*
+					InstructionHandlers.patchInitialHook(codes,
+						new CodeInstruction(OpCodes.Ldarg_0),
+						new CodeInstruction(OpCodes.Ldarg_1),
+						InstructionHandlers.createMethodCall("ReikaKalseki.DIDrones.DIMod", "onSetBoardingUISlot", new Type[] { typeof(BoardingConfigInventorySlot), typeof(IInventoryItem) })
+					);*/
+					PatchLib.fixInvSlotItemTypeDetection(codes);
+					FileLog.Log("Done patch " + MethodBase.GetCurrentMethod().DeclaringType);
+				}
+				catch (Exception e) {
+					FileLog.Log("Caught exception when running patch " + MethodBase.GetCurrentMethod().DeclaringType + "!");
+					FileLog.Log(e.Message);
+					FileLog.Log(e.StackTrace);
+					FileLog.Log(e.ToString());
+				}
+				return codes.AsEnumerable();
+			}
+		}
+
 		static class PatchLib {
 
-			public static void redirectSysMsgInternal(List<CodeInstruction> li) {
+			internal static void redirectSysMsgInternal(List<CodeInstruction> li) {
 				int idx = InstructionHandlers.getLastOpcodeBefore(li, li.Count, OpCodes.Callvirt);
 				li[idx] = InstructionHandlers.createMethodCall("ReikaKalseki.DIDrones.DIMod", "onSystemMessage", new Type[] { typeof(SystemMessageManager), typeof(string), typeof(ConsoleMessageType), typeof(SystemMessageImageType) });
 			}
 
-			internal static void replaceMaybeInlinedFieldWithConstant(List<CodeInstruction> codes, string owner, string name, float origVal, float newVal) {
+			internal static void fixInvSlotItemTypeDetection(List<CodeInstruction> codes) {
+				int idx1 = InstructionHandlers.getInstruction(codes, 0, 0, OpCodes.Callvirt, "System.Object", "GetType", new Type[0]);
+				int idx2 = InstructionHandlers.getInstruction(codes, 0, 0, OpCodes.Call, "System.Type", "GetTypeFromHandle", new Type[]{ typeof(RuntimeTypeHandle) });
+				codes.RemoveRange(idx1, idx2 - idx1 + 1);
+				codes.InsertRange(idx1, new List<CodeInstruction>{
+					InstructionHandlers.createMethodCall("ReikaKalseki.DIDrones.DIExtensions", "isDroneUpgrade", new Type[] { typeof(IInventoryItem) }),
+					new CodeInstruction(OpCodes.Ldc_I4_1) //true, so != true
+				});
+			}
+
+			public static void replaceMaybeInlinedFieldWithConstant(List<CodeInstruction> codes, string owner, string name, float origVal, float newVal) {
 				int idx = -1;
 				try {
 					idx = InstructionHandlers.getInstruction(codes, 0, 0, OpCodes.Ldsfld, owner, name);

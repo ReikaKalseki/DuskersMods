@@ -67,5 +67,13 @@ namespace ReikaKalseki.DIDrones {
             }
 		}
 
+        public static void onSetBoardingUISlot(BoardingConfigInventorySlot slot, IInventoryItem ii) {
+            DSUtil.log("Setting inventoryitem '"+ii+"' in boarding UI slot '"+slot+"'");
+            if (slot.label)
+			    DSUtil.log("Slot text: "+slot.label.text);
+            if (ii != null)
+                DSUtil.log("Item data: name="+ii.Name+" class="+ ii.GetType().Name+", inv type="+Enum.GetName(typeof(InventoryTypeEnum), ii.InventoryType));
+		}
+
 	}
 }
