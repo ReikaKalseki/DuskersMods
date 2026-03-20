@@ -14,8 +14,8 @@ using System.Collections.ObjectModel;
 
 using DSMFramework;
 using DSMFramework.Modding;
-using UpgradeExpansions;
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 
 namespace ReikaKalseki.Upgrades {
 
@@ -56,6 +56,7 @@ namespace ReikaKalseki.Upgrades {
 
 				new DoorChargerUpgradeContainer().register();
 				new ObjectRepairUpgradeContainer().register();
+				new DismantleUpgradeContainer().register();
 			}
 			catch (Exception e) {
 				DSUtil.log("Failed to load UpgradeExpansions: " + e);
@@ -67,5 +68,57 @@ namespace ReikaKalseki.Upgrades {
 			//DSUtil.log("Recorded MakeUpgrade() call from\n" + new StackTrace().GetFrames().getTrace());
 		}
 
+		public static void runPryUpgrade(PryUpgrade upg, ExecutedCommand cmd, bool multi) {
+			if (cmd.Command.CommandName != "pry")
+				return;
+			string arg = cmd.Arguments[cmd.Arguments.Count-1];
+			if (arg == "upgrade") {
+				cmd.Handled = true;
+				Room room = upg.drone.CurrentRoom;
+				TargetableRoomObject target = new TargetableRoomObject(WorldUtil.findTowableInRoom<ShipUpgradeInGameObject>(room, u => !u.ThisUpgrade.IsPermanentUpgrade && u.ShipUpgradeStatus == ShipUpgradeInGameObject.ShipUpgradeStatusEnum.InstalledWorking));
+				if (target.roomObject == null) {
+					upg.SendConsoleResponseMessage("No pry-able upgrade found in room: " + room.LabelSimple, ConsoleMessageType.Warning);
+					return;
+				}
+				if (target.checkAtElseNavToAndTryAgain(upg.drone, cmd)) {
+					ShipUpgradeInGameObject obj = (ShipUpgradeInGameObject)target.roomObject;
+					obj.ShipUpgradeStatus = ShipUpgradeInGameObject.ShipUpgradeStatusEnum.InstalledWorkingLoose;
+					obj.CanBeTowed = true;
+					upg.SendConsoleResponseMessage("Successfully pried upgrade in room " + room.LabelSimple, ConsoleMessageType.Benefit);
+				}
+			}
+			else if (DSUtil.isDoorArg(arg)) {
+				cmd.Handled = true;
+				originalPryLogic(upg, arg, cmd, multi);
+			}
+			else {
+				upg.SendConsoleResponseMessage("Invalid parameter '" + arg + "'. Must be either a door/airlock or 'upgrade'.", ConsoleMessageType.Warning);
+			}
+		}
+
+		public static void originalPryLogic(PryUpgrade upg, string text, ExecutedCommand command, bool partOfMultiCommand) {
+			DungeonManager instance = DungeonManager.Instance;
+			TargetableRoomObject door = new TargetableRoomObject(WorldUtil.findDoor(text));
+			if (door.roomObject == null || !((Door)door.roomObject).corridor.containsRoom(upg.drone.CurrentRoom)) {
+				upg.SendConsoleResponseMessage("Specified door not found: " + text, ConsoleMessageType.Warning);
+				return;
+			}
+			if (door.checkAtElseNavToAndTryAgain(upg.drone, command)) {
+				Door d = (Door)door.roomObject;
+				if (d.state == DoorState.Open) {
+					upg.SendConsoleResponseMessage("Door already open: " + text, ConsoleMessageType.Info);
+				}
+				else {
+					if (!upg.UpgradeUsed())
+						return;
+					d.PryOpen();
+					if (GlobalSettings.cameraMode == CameraMode.Drone) {
+						upg.drone.prySound.volume = GameAudio.RemoteVolume * 1f;
+						upg.drone.prySound.Play();
+					}
+					upg.SendConsoleResponseMessage("Successfully pried door " + text, ConsoleMessageType.Benefit);
+				}
+			}
+		}
 	}
 }

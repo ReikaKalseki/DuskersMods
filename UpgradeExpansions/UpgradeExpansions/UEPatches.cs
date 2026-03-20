@@ -34,6 +34,30 @@ namespace ReikaKalseki.Upgrades {
 			}
 		}
 
+		[HarmonyPatch(typeof(PryUpgrade))]
+		[HarmonyPatch("ExecuteCommand")]
+		public static class PryUpgradeControl {
+
+			public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
+				List<CodeInstruction> codes = new List<CodeInstruction>();
+				try {
+					codes.Add(new CodeInstruction(OpCodes.Ldarg_0));
+					codes.Add(new CodeInstruction(OpCodes.Ldarg_1));
+					codes.Add(new CodeInstruction(OpCodes.Ldarg_2));
+					codes.Add(InstructionHandlers.createMethodCall("ReikaKalseki.Upgrades.UEMod", "runPryUpgrade", new Type[] { typeof(PryUpgrade), typeof(ExecutedCommand), typeof(bool) }));
+					codes.Add(new CodeInstruction(OpCodes.Ret));
+					FileLog.Log("Done patch " + MethodBase.GetCurrentMethod().DeclaringType);
+				}
+				catch (Exception e) {
+					FileLog.Log("Caught exception when running patch " + MethodBase.GetCurrentMethod().DeclaringType + "!");
+					FileLog.Log(e.Message);
+					FileLog.Log(e.StackTrace);
+					FileLog.Log(e.ToString());
+				}
+				return codes.AsEnumerable();
+			}
+		}
+
 		static class PatchLib {
 			
 		}

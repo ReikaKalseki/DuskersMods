@@ -41,5 +41,12 @@ namespace ReikaKalseki.DIDrones {
 			return null;
 		}
 
+		public static T findTowableInRoom<T>(Room r, Predicate<T> condition) where T : class, ITowItem {
+			foreach (ITowItem obj in TowManager.Instance.knownTowableItems) {
+				if (obj is T drone && obj.getRoom() == r && (condition == null || condition.Invoke(drone)))
+					return drone;
+			}
+			return null;
+		}
 	}
 }

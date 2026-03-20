@@ -11,7 +11,7 @@ using ReikaKalseki.DIDrones;
 
 using System.Text.RegularExpressions;
 
-namespace UpgradeExpansions {
+namespace ReikaKalseki.Upgrades {
 
 	public class DoorChargerUpgrade : RefillableCustomDroneUpgrade {
 
@@ -21,23 +21,21 @@ namespace UpgradeExpansions {
 
 		protected override bool performAction(ExecutedCommand cmd) {
 			string target = cmd.Arguments[cmd.Arguments.Count-1];
-			Door door = WorldUtil.findDoor(target);
-			if (door != null && door.corridor.containsRoom(drone.CurrentRoom)) {
-				Bounds bounds = door.corridor.GetComponent<Collider>().bounds;
-				bounds.Expand(new Vector3(0.3f, 0.3f, 0.3f));
-				if (bounds.Intersects(drone.GetComponent<Collider>().bounds)) {
-					if (door.powered) {
+			TargetableRoomObject door = new TargetableRoomObject(WorldUtil.findDoor(target));
+			if (door.roomObject != null && ((Door)door.roomObject).corridor.containsRoom(drone.CurrentRoom)) {
+				Door d = (Door)door.roomObject;
+				if (door.checkAtElseNavToAndTryAgain(drone, cmd)) {
+					if (d.powered) {
 						SendConsoleResponseMessage("Door " + target + " already powered", ConsoleMessageType.Info);
 						return false;
 					}
 					else {
 						SendConsoleResponseMessage("Successfully powered door " + target, ConsoleMessageType.Benefit);
-						door.power(true);
+						d.power(true);
 						return true;
 					}
 				}
 				else {
-					drone.NavigateToAndExecuteCommand(door.corridor.gameObject, cmd, CollisionType.BoundsIntesect);
 					return false;
 				}
 			}
@@ -54,7 +52,7 @@ namespace UpgradeExpansions {
 			new UpgradeRefillDefinition(4, 2, "charge"),
 			"Door Charger",
 			DroneUpgradeClass.Exploration,
-			new CustomCommandDefinition("chargedoor", "Allows your drone to connect to a door and charge it", "d14", new Regex("^[d,a][0-9]+$")),
+			new CustomCommandDefinition("chargedoor", "Allows your drone to connect to a door and charge it", "d14", DSUtil.doorRegex),
 			8, //purchase cost
 			0,
 			0

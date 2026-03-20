@@ -19,7 +19,7 @@ namespace ReikaKalseki.DIDrones {
 
 		protected readonly ModDroneUpgradeContainer container;
 
-		internal CustomDroneUpgrade(DroneUpgradeDefinition def, ModDroneUpgradeContainer c) : base(def) {
+		protected CustomDroneUpgrade(DroneUpgradeDefinition def, ModDroneUpgradeContainer c) : base(def) {
 			container = c;
 		}
 

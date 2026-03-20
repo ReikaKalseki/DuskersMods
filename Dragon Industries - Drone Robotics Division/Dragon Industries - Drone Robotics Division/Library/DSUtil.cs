@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Globalization;
 
 using UnityEngine;
+using System.Text.RegularExpressions;
 
 namespace ReikaKalseki.DIDrones {
 
@@ -18,8 +19,8 @@ namespace ReikaKalseki.DIDrones {
 	    public static readonly Assembly diDLL = Assembly.GetExecutingAssembly();
 	    public static readonly Assembly gameDLL = Assembly.GetAssembly(typeof(DungeonInfo));
 	    public static readonly Assembly gameDLL2 = Assembly.GetAssembly(typeof(MeshContainer));
-	    
-	    public static readonly string gameDir = Directory.GetParent(gameDLL.Location).Parent.Parent.FullName; //managed -> _Data -> root
+
+		public static readonly string gameDir = Directory.GetParent(gameDLL.Location).Parent.Parent.FullName; //managed -> _Data -> root
 		//public static readonly string savesDir = "C:\\Users\\Reika\\AppData\\LocalLow\\MijuGames\\Planet Crafter";
 
         public static bool allowDIDLL = false;
@@ -32,8 +33,10 @@ namespace ReikaKalseki.DIDrones {
             gameDLL,
             gameDLL2
         };
-	    
-	    static DSUtil() {
+
+		public static readonly Regex doorRegex = new Regex("^[d,a][0-9]+$");
+
+		static DSUtil() {
 			
 	    }
 	    
@@ -110,6 +113,9 @@ namespace ReikaKalseki.DIDrones {
 		public static bool match(string s, string seek) {
 			return s == seek || (!string.IsNullOrEmpty(s) && !string.IsNullOrEmpty(seek) && (seek[0] == '*' && s.EndsWith(seek.Substring(1), StringComparison.InvariantCulture)) || (seek[seek.Length-1] == '*' && s.StartsWith(seek.Substring(0, seek.Length-1), StringComparison.InvariantCulture)));
 		}
-		
+
+		public static bool isDoorArg(string arg) {
+			return doorRegex.IsMatch(arg);
+		}
 	}
 }

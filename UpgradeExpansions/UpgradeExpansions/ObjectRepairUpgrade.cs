@@ -10,8 +10,9 @@ using DSMFramework.Modding;
 using ReikaKalseki.DIDrones;
 
 using System.Text.RegularExpressions;
+using Steamworks;
 
-namespace UpgradeExpansions {
+namespace ReikaKalseki.Upgrades {
 
 	public class ObjectRepairUpgrade : RefillableCustomDroneUpgrade {
 
@@ -24,6 +25,7 @@ namespace UpgradeExpansions {
 			{"console", typeof(DungeonTerminal) },
 			{"gun", typeof(DungeonDefense) },
 			{"turret", typeof(DungeonDefense) },
+			{"upgrade", typeof(ShipUpgradeInGameObject) },
 		};
 
 		public ObjectRepairUpgrade(DroneUpgradeDefinition def, ModDroneUpgradeContainer c) : base(def, c) {
@@ -31,28 +33,43 @@ namespace UpgradeExpansions {
 		}
 
 		protected override bool performAction(ExecutedCommand cmd) {
-			string type = cmd.Arguments[cmd.Arguments.Count-1];
-			Type obj = typeMap.ContainsKey(type) ? typeMap[type] : null;
-			if (obj == null) {
-				SendConsoleResponseMessage("Unknown object type '" + type + "'. Valid types: " + typeMap.Keys.toDebugString(), ConsoleMessageType.Warning);
+			string arg = cmd.Arguments[cmd.Arguments.Count-1];
+			bool wantDoor = DSUtil.isDoorArg(arg);
+			TargetableRoomObject target;
+			Room room = drone.CurrentRoom;
+			if (wantDoor) {
+				target = new TargetableRoomObject(WorldUtil.findDoor(arg));
+			}
+			else {
+				Type type = typeMap.ContainsKey(arg) ? typeMap[arg] : null;
+				if (type == null) {
+					SendConsoleResponseMessage("Unknown object type '" + arg + "'. Valid types: " + typeMap.Keys.toDebugString(), ConsoleMessageType.Warning);
+					return false;
+				}
+				if (type == typeof(ShipUpgradeInGameObject))
+					target = new TargetableRoomObject(WorldUtil.findTowableInRoom<ShipUpgradeInGameObject>(room, u => u.isBroken()));
+				else
+					target = new TargetableRoomObject(room.GetRoomItem(type, false));
+			}
+			
+			string rname = room.LabelSimple;
+			if (target.roomObject == null) {
+				SendConsoleResponseMessage(string.Format("No {0} of {1} '{2}' found in room {3}", wantDoor ? "door" : "object", wantDoor ? "name" : "type", arg, rname), ConsoleMessageType.Warning);
 				return false;
 			}
-			object target = obj == typeof(Door) ? null : drone.CurrentRoom.GetRoomItem(obj, false);
-			string rname = drone.CurrentRoom.LabelSimple;
-			if (target == null) {
-				SendConsoleResponseMessage("No object of type '" + type + "' found in room " + rname, ConsoleMessageType.Warning);
-				return false;
-			}
-			Bounds bounds = (target is Door d ? d.corridor : (MonoBehaviour)target).GetComponent<Collider>().bounds;
-			bounds.Expand(new Vector3(0.3f, 0.3f, 0.3f));
-			if (bounds.Intersects(drone.GetComponent<Collider>().bounds)) {
-				bool dead = target is Door dr ? dr.isDead : ((RoomItem)target).IsDead;
-				if (dead) {
-					if (target is Door dr2)
+
+			if (target.checkAtElseNavToAndTryAgain(drone, cmd)) {
+				if (target.isDead) {
+					if (target.roomObject is Door dr2) {
 						dr2.repair();
-					else
+					}
+					else if (target.roomObject is ShipUpgradeInGameObject u) {
+						u.repair();
+					}
+					else {
 						((IBreakable)target).Fix(out string msg);
-					SendConsoleResponseMessage("Successfully repaired " + type + " in room " + rname, ConsoleMessageType.Benefit);
+					}
+					SendConsoleResponseMessage("Successfully repaired " + arg + " in room " + rname, ConsoleMessageType.Benefit);
 					return true;
 				}
 				else {
@@ -61,10 +78,6 @@ namespace UpgradeExpansions {
 				}
 			}
 			else {
-				if (target is Door dr2)
-					drone.NavigateToAndExecuteCommand(dr2.corridor.gameObject, cmd, CollisionType.BoundsIntesect);
-				else
-					drone.NavigateToAndExecuteCommand((RoomItem)target, cmd, CollisionType.BoundsIntesect);
 				return false;
 			}
 		}
