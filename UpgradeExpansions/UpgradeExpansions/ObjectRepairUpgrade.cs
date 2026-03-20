@@ -17,7 +17,7 @@ namespace ReikaKalseki.Upgrades {
 	public class ObjectRepairUpgrade : RefillableCustomDroneUpgrade {
 
 		private static Dictionary<string, Type> typeMap = new Dictionary<string, Type>(){
-			{"door", typeof(Door) },
+			//{"door", typeof(Door) },
 			{"airlock", typeof(Door) },
 			{"generator", typeof(DungeonPowerInlet) },
 			{"power", typeof(DungeonPowerInlet) },
@@ -67,7 +67,7 @@ namespace ReikaKalseki.Upgrades {
 						u.repair();
 					}
 					else {
-						((IBreakable)target).Fix(out string msg);
+						((IBreakable)target.roomObject).Fix(out string msg);
 					}
 					SendConsoleResponseMessage("Successfully repaired " + arg + " in room " + rname, ConsoleMessageType.Benefit);
 					return true;
@@ -92,7 +92,7 @@ namespace ReikaKalseki.Upgrades {
 			new CustomCommandDefinition("repair",
 				"Allows your drone to repair broken installations like doors, power taps and terminals.",
 				"terminal",
-				new Regex("^[a-zA-Z]+$")),
+				new Regex("^[0-9a-zA-Z]+$")),
 			8, //purchase cost
 			0,
 			0

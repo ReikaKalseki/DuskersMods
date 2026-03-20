@@ -20,8 +20,6 @@ namespace ReikaKalseki.Upgrades {
 		}
 
 		protected override bool performAction(ExecutedCommand cmd) {
-			string type = cmd.Arguments[cmd.Arguments.Count-1];
-
 			TargetableRoomObject target = new TargetableRoomObject(WorldUtil.findTowableInRoom<Drone>(drone.CurrentRoom, d => d.IsDead && !d.CanBeTowed));
 			string rname = drone.CurrentRoom.LabelSimple;
 			if (target.roomObject == null) {

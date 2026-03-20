@@ -32,6 +32,7 @@ namespace ReikaKalseki.Upgrades {
 					else {
 						SendConsoleResponseMessage("Successfully powered door " + target, ConsoleMessageType.Benefit);
 						d.power(true);
+						d.RefreshSchematicColor();
 						return true;
 					}
 				}

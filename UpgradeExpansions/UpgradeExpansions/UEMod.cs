@@ -71,7 +71,7 @@ namespace ReikaKalseki.Upgrades {
 		public static void runPryUpgrade(PryUpgrade upg, ExecutedCommand cmd, bool multi) {
 			if (cmd.Command.CommandName != "pry")
 				return;
-			string arg = cmd.Arguments[cmd.Arguments.Count-1];
+			string arg = cmd.Arguments.Count == 0 ? null : cmd.Arguments[cmd.Arguments.Count-1];
 			if (arg == "upgrade") {
 				cmd.Handled = true;
 				Room room = upg.drone.CurrentRoom;
@@ -87,7 +87,7 @@ namespace ReikaKalseki.Upgrades {
 					upg.SendConsoleResponseMessage("Successfully pried upgrade in room " + room.LabelSimple, ConsoleMessageType.Benefit);
 				}
 			}
-			else if (DSUtil.isDoorArg(arg)) {
+			else if (arg != null && DSUtil.isDoorArg(arg)) {
 				cmd.Handled = true;
 				originalPryLogic(upg, arg, cmd, multi);
 			}

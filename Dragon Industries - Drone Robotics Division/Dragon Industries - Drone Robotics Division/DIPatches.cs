@@ -89,7 +89,6 @@ namespace ReikaKalseki.DIDrones {
 
 		[HarmonyPatch(typeof(BoardingConfigInventorySlot))]
 		[HarmonyPatch("SetInventoryItem", typeof(IInventoryItem))]
-		[HarmonyDebug]
 		public static class BoardingUIInvSlotSetFix {
 
 			public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
