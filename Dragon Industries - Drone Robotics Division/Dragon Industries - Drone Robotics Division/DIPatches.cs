@@ -115,7 +115,7 @@ namespace ReikaKalseki.DIDrones {
 
 		[HarmonyPatch(typeof(Drone))]
 		[HarmonyPatch("AddSoundSources")]
-		public static class BoardingUIInvSlotSetFix {
+		public static class DroneSoundHook {
 
 			public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
 				List<CodeInstruction> codes = new List<CodeInstruction>(instructions);

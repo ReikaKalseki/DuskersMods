@@ -6,11 +6,7 @@ using System.Text;
 namespace ReikaKalseki.DIDrones {
 	public class ChangeDroneCallsignMod : IModification {
 
-		public readonly int callsignIndex;
-
-		public ChangeDroneCallsignMod(int idx) {
-			callsignIndex = idx;
-		}
+		private NonVisualDrone _targetDrone;
 
 		public ModificationStorageIdEnum ModificationStorageId {
 			get {
@@ -20,13 +16,13 @@ namespace ReikaKalseki.DIDrones {
 
 		public string DisplayName {
 			get {
-				return "Callout number "+callsignIndex;
+				return "Cycle callout";
 			}
 		}
 
 		public string Description {
 			get {
-				return "Changes a drone's callout to format number \"+callsignIndex";
+				return "Changes a drone's callout sound";
 			}
 		}
 
@@ -60,17 +56,19 @@ namespace ReikaKalseki.DIDrones {
 			if (_targetDrone == null) {
 				return;
 			}
-			_targetDrone.CSID = callsignIndex;
-			GameAudio.Play2DSFX((GameAudio.SoundEnum)((int)GameAudio.SoundEnum.DroneCS_1 + callsignIndex));
+			_targetDrone.CSID = (_targetDrone.CSID+1)%13;
+			GameAudio.SoundEnum enm = (GameAudio.SoundEnum)((int)GameAudio.SoundEnum.DroneCS_1 + _targetDrone.CSID);
+			float vol = GameAudio.VolumeMultiplier(enm, GameAudio.DroneCallSignalVolume);
+			GameAudio.LoadSFXIntoDict(enm);
+			GameAudio.Play2DSFX(enm, vol);
+			//DSUtil.log("Played sound "+Enum.GetName(typeof(GameAudio.SoundEnum), enm)+" at vol "+vol);
 		}
 
 		public IModification CopyModification() {
-			IModification ret = new ChangeDroneCallsignMod(callsignIndex);
+			IModification ret = new ChangeDroneCallsignMod();
 			ret.SetTarget(_targetDrone);
 			return ret;
 		}
-
-		private NonVisualDrone _targetDrone;
 	}
 
 }

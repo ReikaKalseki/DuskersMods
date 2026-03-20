@@ -10,6 +10,7 @@ using ReikaKalseki.DIDrones;
 using HarmonyLib;
 
 using UnityEngine;
+using DSMFramework.Modding;
 
 namespace ReikaKalseki.DIDrones {
 
@@ -46,10 +47,13 @@ namespace ReikaKalseki.DIDrones {
                     FileLog.Log(ex.ToString());
                 }
 
-                for (int i = 0; i <= 12; i++) {
-                    new ChangeDroneCallsignMod(i);
-				}
-            }
+                //for (int i = 0; i <= 12; i++) {
+					//    new ChangeDroneCallsignMod(i);
+					//too early GameAudio.LoadSFXIntoDict(GameAudio.SoundEnum.DroneCS_1+i);
+				//}
+                //ModificationsHelper._modificationsByType
+                ModUpgradeManager.Manager.RegisterModificationFor(typeof(NonVisualDrone), new ChangeDroneCallsignMod());
+			}
             catch (Exception e) {
                 DSUtil.log("Failed to load DI: "+e, DSUtil.diDLL);
             }
