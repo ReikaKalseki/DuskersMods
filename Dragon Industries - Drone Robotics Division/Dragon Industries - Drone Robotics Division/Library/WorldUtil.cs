@@ -6,7 +6,7 @@ using System.Text;
 namespace ReikaKalseki.DIDrones {
 	public class WorldUtil {
 
-		public static DungeonInfo getClosestVisitableDungeon(bool allowVisited, bool ignoreEquipment) {
+		public static DungeonInfo getClosestVisitableDungeon(bool allowVisited, bool ignoreEquipment, bool wrecksOnly) {
 			if (GlobalSettings.GameState.ThePlayer.CurrentStarSystem == null || GlobalSettings.GameState.ThePlayer.CurrentStarSystem.Dungeons == null) {
 				return null;
 			}
@@ -14,7 +14,7 @@ namespace ReikaKalseki.DIDrones {
 			DungeonInfo ret = null;
 			DungeonInfo at = GlobalSettings.GameState.ThePlayer.CurrentDockedDungeon;
 			foreach (DungeonInfo dg in GlobalSettings.GameState.ThePlayer.CurrentStarSystem.Dungeons) {
-				if (dg != null && dg != at && (!dg.HaveVisited || allowVisited) && (ignoreEquipment || dg.HasRequiredEquipment)) {
+				if (dg != null && dg != at && (!dg.HaveVisited || allowVisited) && (ignoreEquipment || dg.HasRequiredEquipment) && (!wrecksOnly || dg.DungeonType.isWreck())) {
 					int d0 = GalaxyMapManager.CalculateDungeonDistanceInDays(at.Coordinates, dg.Coordinates);
 					if (dist == -1 || d0 < dist) {
 						dist = d0;

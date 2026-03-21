@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections;
 using System.Linq;
 using System.Text;
+
+using UnityEngine;
 
 namespace ReikaKalseki.DIDrones {
 	public class ChangeDroneCallsignMod : IModification {
@@ -58,16 +61,29 @@ namespace ReikaKalseki.DIDrones {
 			}
 			_targetDrone.CSID = (_targetDrone.CSID+1)%13;
 			GameAudio.SoundEnum enm = (GameAudio.SoundEnum)((int)GameAudio.SoundEnum.DroneCS_1 + _targetDrone.CSID);
-			float vol = GameAudio.VolumeMultiplier(enm, GameAudio.DroneCallSignalVolume);
 			GameAudio.LoadSFXIntoDict(enm);
-			GameAudio.Play2DSFX(enm, vol);
-			//DSUtil.log("Played sound "+Enum.GetName(typeof(GameAudio.SoundEnum), enm)+" at vol "+vol);
+			DroneCallsignPreview dr = GalaxyMapManager.Instance.gameObject.AddComponent<DroneCallsignPreview>();
+			dr.sound = enm;
+			dr.StartCoroutine(dr.playAndRemove());
 		}
 
 		public IModification CopyModification() {
 			IModification ret = new ChangeDroneCallsignMod();
 			ret.SetTarget(_targetDrone);
 			return ret;
+		}
+
+		class DroneCallsignPreview : MonoBehaviour {
+
+			public GameAudio.SoundEnum sound;
+
+			public IEnumerator playAndRemove() {
+				yield return new WaitForSeconds(0.25F);
+				//DSUtil.log("Playing sound "+sound+" after delay 0.25");
+				GameAudio.Play2DSFX(sound, GameAudio.VolumeMultiplier(sound, GameAudio.DroneCallSignalVolume));
+				UnityEngine.Object.Destroy(this);
+			}
+
 		}
 	}
 

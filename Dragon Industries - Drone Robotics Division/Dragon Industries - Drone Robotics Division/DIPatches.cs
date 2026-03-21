@@ -136,6 +136,77 @@ namespace ReikaKalseki.DIDrones {
 			}
 		}
 
+		[HarmonyPatch(typeof(UIDroneItem))]
+		[HarmonyPatch("Highlight")]
+		public static class DroneMenuSelectHook {
+
+			public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
+				List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
+				try {
+					InstructionHandlers.patchInitialHook(codes,
+						new CodeInstruction(OpCodes.Ldarg_0),
+						InstructionHandlers.createMethodCall("ReikaKalseki.DIDrones.DIMod", "onDroneInListSelected", new Type[] { typeof(UIDroneItem) })
+					);
+					FileLog.Log("Done patch " + MethodBase.GetCurrentMethod().DeclaringType);
+				}
+				catch (Exception e) {
+					FileLog.Log("Caught exception when running patch " + MethodBase.GetCurrentMethod().DeclaringType + "!");
+					FileLog.Log(e.Message);
+					FileLog.Log(e.StackTrace);
+					FileLog.Log(e.ToString());
+				}
+				return codes.AsEnumerable();
+			}
+		}
+
+		[HarmonyPatch(typeof(BoardingConfigDronePanel))]
+		[HarmonyPatch("SetHighlighted")]
+		public static class DroneMenu2SelectHook {
+
+			public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
+				List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
+				try {
+					InstructionHandlers.patchInitialHook(codes,
+						new CodeInstruction(OpCodes.Ldarg_0),
+						new CodeInstruction(OpCodes.Ldarg_1),
+						InstructionHandlers.createMethodCall("ReikaKalseki.DIDrones.DIMod", "onDroneInListSelected", new Type[] { typeof(BoardingConfigDronePanel), typeof(bool) })
+					);
+					FileLog.Log("Done patch " + MethodBase.GetCurrentMethod().DeclaringType);
+				}
+				catch (Exception e) {
+					FileLog.Log("Caught exception when running patch " + MethodBase.GetCurrentMethod().DeclaringType + "!");
+					FileLog.Log(e.Message);
+					FileLog.Log(e.StackTrace);
+					FileLog.Log(e.ToString());
+				}
+				return codes.AsEnumerable();
+			}
+		}
+
+		[HarmonyPatch(typeof(BoardingConfigDronePanel))]
+		[HarmonyPatch("SetCursorHere")]
+		public static class DroneMenu2bSelectHook {
+
+			public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
+				List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
+				try {
+					InstructionHandlers.patchInitialHook(codes,
+						new CodeInstruction(OpCodes.Ldarg_0),
+						new CodeInstruction(OpCodes.Ldarg_1),
+						InstructionHandlers.createMethodCall("ReikaKalseki.DIDrones.DIMod", "onDroneInListSelected", new Type[] { typeof(BoardingConfigDronePanel), typeof(bool) })
+					);
+					FileLog.Log("Done patch " + MethodBase.GetCurrentMethod().DeclaringType);
+				}
+				catch (Exception e) {
+					FileLog.Log("Caught exception when running patch " + MethodBase.GetCurrentMethod().DeclaringType + "!");
+					FileLog.Log(e.Message);
+					FileLog.Log(e.StackTrace);
+					FileLog.Log(e.ToString());
+				}
+				return codes.AsEnumerable();
+			}
+		}
+
 		static class PatchLib {
 
 			internal static void redirectSysMsgInternal(List<CodeInstruction> li) {

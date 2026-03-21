@@ -131,7 +131,7 @@ namespace ReikaKalseki.BalanceTweaks {
 
 		public static void addFuelNode(List<RoomItem> li, FuelAccess f) {
 			int has = GlobalSettings.GameState.ThePlayer.Inventory.TotalPropulsionFuel;
-			DungeonInfo dg = WorldUtil.getClosestVisitableDungeon(false, false);
+			DungeonInfo dg = WorldUtil.getClosestVisitableDungeon(false, false, true);
 			StarSystemInfo sys = GlobalSettings.GameState.ThePlayer.CurrentStarSystem;
 			DSUtil.log(string.Format("Wreck-gen fuel check A: Player in system '{1}' has {0} fuel", has, sys == null ? "<None>" : sys.Name));
 			if (dg == null) {

@@ -20,7 +20,7 @@ namespace ReikaKalseki.Upgrades {
 		}
 
 		protected override bool performAction(ExecutedCommand cmd) {
-			TargetableRoomObject target = new TargetableRoomObject(WorldUtil.findTowableInRoom<Drone>(drone.CurrentRoom, d => d.IsDead && !d.CanBeTowed));
+			TargetableRoomObject target = new TargetableRoomObject(WorldUtil.findTowableInRoom<Drone>(drone.CurrentRoom, d => d.IsDead/* && !d.CanBeTowed*/));
 			string rname = drone.CurrentRoom.LabelSimple;
 			if (target.roomObject == null) {
 				SendConsoleResponseMessage("No valid drone found in room " + rname, ConsoleMessageType.Warning);
@@ -47,7 +47,7 @@ namespace ReikaKalseki.Upgrades {
 			"Scrapper",
 			DroneUpgradeClass.Other,
 			new CustomCommandDefinition("dismantle",
-				"Allows your drone to break destroyed drones down into scrap.",
+				"Allows your drone to break disabled or destroyed drones down into scrap.",
 				""
 			),
 			10, //purchase cost

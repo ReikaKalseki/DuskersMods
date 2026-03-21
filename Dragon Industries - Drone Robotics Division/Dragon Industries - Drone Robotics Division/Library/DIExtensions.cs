@@ -495,6 +495,17 @@ namespace ReikaKalseki.DIDrones {
 			return typeof(BaseDroneUpgrade).IsAssignableFrom(ii.GetType());
 		}
 
+		public static bool isWreck(this DungeonTypeEnum e) {
+			switch (e) {
+				case DungeonTypeEnum.Derelict:
+				case DungeonTypeEnum.Outpost:
+				case DungeonTypeEnum.Station:
+					return true;
+				default:
+					return false;
+			}
+		}
+
 		public static void setCallsign(this Drone d, int idx) {
 			d.CSID = idx;
 			d.soundRCallSign = (GameAudio.SoundEnum)((int)GameAudio.SoundEnum.DroneCS_1 + idx);
@@ -502,5 +513,25 @@ namespace ReikaKalseki.DIDrones {
 			d.asRCallSign.volume = GameAudio.VolumeMultiplier(d.soundRCallSign, GameAudio.DroneCallSignalVolume);
 		}
 
+		public static void playCallsign(this IDrone d) {
+			GameAudio.SoundEnum enm = (GameAudio.SoundEnum)((int)GameAudio.SoundEnum.DroneCS_1 + d.CSID);
+			GameAudio.LoadSFXIntoDict(enm);
+			GameAudio.Play2DSFX(enm);
+		}
+
+		public static bool toggleFlagWithColor(this Room r, Color c) {
+			if (c == Color.clear)
+				c = r.FlaggedRoomColor;
+			if (r.isFlagged) {
+				r.ClearRoomFlag();
+			}
+			else {
+				r.labelTextObject.color = c;
+				r.isFlagged = true;
+			}
+			return r.isFlagged;
+		}
+
 	}
+
 }

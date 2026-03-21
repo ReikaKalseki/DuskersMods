@@ -43,6 +43,7 @@ $RECYCLE.BIN/
 **/obj/*
 **/bin/*
 .vs/*
+.vsx/*
 *.sln
 *.csproj
 *.sdsettings

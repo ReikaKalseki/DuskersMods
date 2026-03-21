@@ -8,14 +8,18 @@ using UnityEngine;
 namespace ReikaKalseki.DIDrones {
 	public class TargetableRoomObject {
 
-		public readonly object roomObject;
+		public object roomObject {  get; private set; }
 
-		public readonly TargetableType type;
+		public TargetableType type { get; private set; }
 
 		public TargetableRoomObject(object o) {
-			roomObject = o;
+			setObject(o);
+		}
+
+		public void setObject(object o) {
 			if (o == null)
 				return;
+			roomObject = o;
 			if (o is Drone)
 				type = TargetableType.DRONE;
 			else if (o is RoomItem)
@@ -27,7 +31,7 @@ namespace ReikaKalseki.DIDrones {
 			else if (o is ITowItem)
 				type = TargetableType.MISCTOW;
 			else
-				throw new Exception("Invalid, non-targetable object: "+o.GetType().Name);
+				throw new Exception("Invalid, non-targetable object: " + o.GetType().Name);
 		}
 
 		public Collider collider {
@@ -76,8 +80,31 @@ namespace ReikaKalseki.DIDrones {
 			}
 		}
 
+		public Room roomLocation {
+			get {
+				switch (type) {
+					case TargetableType.DOOR:
+						return ((Door)roomObject).CurrentRoom;
+					case TargetableType.ROOMITEM:
+						return ((RoomItem)roomObject).roomLocation;
+					case TargetableType.DRONE:
+						return ((Drone)roomObject).CurrentRoom;
+					case TargetableType.UPGRADE:
+						return ((ShipUpgradeInGameObject)roomObject).roomLocation;
+					case TargetableType.MISCTOW:
+						return ((ITowItem)roomObject).getRoom();
+					default:
+						throw new Exception("Invalid object type!");
+				}
+			}
+		}
+
+		public bool checkDroneBounds(Drone drone) {
+			return proximityBounds.Intersects(drone.GetComponent<Collider>().bounds);
+		}
+
 		public bool checkAtElseNavToAndTryAgain(Drone drone, ExecutedCommand cmd) {
-			if (proximityBounds.Intersects(drone.GetComponent<Collider>().bounds)) {
+			if (checkDroneBounds(drone)) {
 				return true;
 			}
 			else {

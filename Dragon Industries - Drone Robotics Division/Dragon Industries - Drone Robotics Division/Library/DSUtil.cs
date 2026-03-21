@@ -35,6 +35,7 @@ namespace ReikaKalseki.DIDrones {
         };
 
 		public static readonly Regex doorRegex = new Regex("^[d,a][0-9]+$");
+		public static readonly Regex roomRegex = new Regex("^r[0-9]+$");
 
 		static DSUtil() {
 			

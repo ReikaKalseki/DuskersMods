@@ -15,13 +15,15 @@ namespace ReikaKalseki.Upgrades {
 
 	public class DoorChargerUpgrade : RefillableCustomDroneUpgrade {
 
+		private readonly TargetableRoomObject door = new TargetableRoomObject(null);
+
 		public DoorChargerUpgrade(DroneUpgradeDefinition def, ModDroneUpgradeContainer c) : base(def, c) {
 
 		}
 
 		protected override bool performAction(ExecutedCommand cmd) {
 			string target = cmd.Arguments[cmd.Arguments.Count-1];
-			TargetableRoomObject door = new TargetableRoomObject(WorldUtil.findDoor(target));
+			door.setObject(new TargetableRoomObject(WorldUtil.findDoor(target)));
 			if (door.roomObject != null && ((Door)door.roomObject).corridor.containsRoom(drone.CurrentRoom)) {
 				Door d = (Door)door.roomObject;
 				if (door.checkAtElseNavToAndTryAgain(drone, cmd)) {
@@ -44,6 +46,23 @@ namespace ReikaKalseki.Upgrades {
 				SendConsoleResponseMessage("Specified door '" + target + "' not found!", ConsoleMessageType.Warning);
 				return false;
 			}
+		}
+
+		public override void OnUpdate() {
+			if (!IsActivated)
+				return;
+			if (door.roomObject == null || drone.CurrentRoom != door.roomLocation || (drone.isMoving && !door.checkDroneBounds(drone))) {
+				this.CancelAbility();
+				SendConsoleResponseMessage("Door power deactivated", ConsoleMessageType.Warning);
+			}
+		}
+
+		public override void CancelAbility() {
+			base.CancelAbility();
+			if (door.roomObject != null) {
+				((Door)door.roomObject).power(false);
+			}
+			door.setObject(null);
 		}
 	}
 
