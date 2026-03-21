@@ -83,10 +83,10 @@ namespace ReikaKalseki.DIDrones {
 					rooms.Remove(meta);
 					if (meta == "clear") {
 						sound = GameAudio.SoundEnum.FlagRemoved;
+						rooms.Add("*");
 					}
-					else if (new Regex("^[0-9]+,[0-9]+,[0-9]+$").IsMatch(meta)) {
-						string[] rgb = meta.Split(',');
-						use = new Color(int.Parse(rgb[0]) / 255F, int.Parse(rgb[1]) / 255F, int.Parse(rgb[2]) / 255F, 1);
+					else if (new Regex("^[0-9a-fA-F]{6}$").IsMatch(meta)) {
+						ColorUtility.TryParseHtmlString("#"+meta, out use);
 						sound = GameAudio.SoundEnum.FlagPlaced;
 					}
 					else {
@@ -96,7 +96,7 @@ namespace ReikaKalseki.DIDrones {
 				}
 				bool any = false;
 				foreach (Room room4 in dm.rooms) {
-					if (rooms.Contains(room4.Label))
+					if (rooms.Contains(room4.Label) || rooms.Contains("*"))
 						any |= room4.toggleFlagWithColor(use);
 				}
 				if (sound == GameAudio.SoundEnum.None)
