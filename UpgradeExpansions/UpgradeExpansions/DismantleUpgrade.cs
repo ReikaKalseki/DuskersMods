@@ -50,7 +50,7 @@ namespace ReikaKalseki.Upgrades {
 				"Allows your drone to break disabled or destroyed drones down into scrap.",
 				""
 			),
-			10, //purchase cost
+			4, //purchase cost
 			0,
 			0
 			) {

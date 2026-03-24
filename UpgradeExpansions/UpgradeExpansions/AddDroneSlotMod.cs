@@ -37,7 +37,7 @@ namespace ReikaKalseki.DIDrones {
 
 		public int ScrapCost {
 			get {
-				return 50;
+				return -50;
 			}
 		}
 

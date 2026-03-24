@@ -59,7 +59,7 @@ namespace ReikaKalseki.Upgrades {
 			new CustomCommandDefinition("hack",
 				"A suite of military-grade software designed to grant access to all functions within computer systems.",
 				""),
-			8, //purchase cost
+			5, //purchase cost
 			0,
 			0
 			) {

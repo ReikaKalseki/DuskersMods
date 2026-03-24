@@ -93,7 +93,7 @@ namespace ReikaKalseki.Upgrades {
 				"Allows your drone to repair broken installations like doors, power taps and terminals.",
 				"terminal",
 				new Regex("^[0-9a-zA-Z]+$")),
-			8, //purchase cost
+			6, //purchase cost
 			0,
 			0
 			) {

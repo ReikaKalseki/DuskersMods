@@ -73,7 +73,7 @@ namespace ReikaKalseki.Upgrades {
 			"Door Charger",
 			DroneUpgradeClass.Exploration,
 			new CustomCommandDefinition("chargedoor", "Allows your drone to connect to a door and charge it", "d14", DSUtil.doorRegex),
-			8, //purchase cost
+			4, //purchase cost
 			0,
 			0
 			) {
