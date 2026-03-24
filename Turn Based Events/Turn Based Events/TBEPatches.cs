@@ -203,6 +203,27 @@ namespace ReikaKalseki.TBE {
 			}
 		}
 
+		[HarmonyPatch(typeof(TransporterShipUpgrade))]
+		[HarmonyPatch("OnUpdate")]
+
+		public static class TickTransporter {
+
+			public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
+				List<CodeInstruction> codes = new List<CodeInstruction>();
+				try {
+					codes = PatchLib.redirectEventMethod("tickTransporterUpgrade", typeof(TransporterShipUpgrade));
+					FileLog.Log("Done patch " + MethodBase.GetCurrentMethod().DeclaringType);
+				}
+				catch (Exception e) {
+					FileLog.Log("Caught exception when running patch " + MethodBase.GetCurrentMethod().DeclaringType + "!");
+					FileLog.Log(e.Message);
+					FileLog.Log(e.StackTrace);
+					FileLog.Log(e.ToString());
+				}
+				return codes.AsEnumerable();
+			}
+		}
+
 		static class PatchLib {
 
 			internal static List<CodeInstruction> redirectEventMethod(string target, Type t) {

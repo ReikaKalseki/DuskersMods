@@ -57,6 +57,8 @@ namespace ReikaKalseki.Upgrades {
 				new DoorChargerUpgradeContainer().register();
 				new ObjectRepairUpgradeContainer().register();
 				new DismantleUpgradeContainer().register();
+
+				ModUpgradeManager.Manager.RegisterModificationFor(typeof(NonVisualDrone), new AddDroneSlotMod());
 			}
 			catch (Exception e) {
 				DSUtil.log("Failed to load UpgradeExpansions: " + e);

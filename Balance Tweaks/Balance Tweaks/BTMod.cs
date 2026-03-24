@@ -132,6 +132,8 @@ namespace ReikaKalseki.BalanceTweaks {
 		public static void addFuelNode(List<RoomItem> li, FuelAccess f) {
 			int has = GlobalSettings.GameState.ThePlayer.Inventory.TotalPropulsionFuel;
 			DungeonInfo dg = WorldUtil.getClosestVisitableDungeon(false, false, true);
+			if (dg == null)
+				dg = WorldUtil.getClosestVisitableDungeon(false, false, false);
 			StarSystemInfo sys = GlobalSettings.GameState.ThePlayer.CurrentStarSystem;
 			DSUtil.log(string.Format("Wreck-gen fuel check A: Player in system '{1}' has {0} fuel", has, sys == null ? "<None>" : sys.Name));
 			if (dg == null) {
@@ -176,6 +178,27 @@ namespace ReikaKalseki.BalanceTweaks {
 				return 5;
 			}
 			return -modScrapCosts[n];
+		}
+
+		public static void onInitVideoFailure(VideoFailManager mgr) {
+			mgr._videoFailObject.VideoLossDuration = Mathf.Clamp(VideoFailManager._random.NextFloat(mgr._failDurationMinInitial*0.75F, mgr._failDurationMaxInitial*0.5F), 2, 5);
+			if (mgr._videoFailObject is DungeonInfo) { //schematic view
+				mgr._videoFailObject.VideoLossDuration = Mathf.Min(mgr._videoFailObject.VideoLossDuration, 1); //never more than 1 seconds at first
+			}
+			mgr._videoFailObject.TimeOfNextVideoRestore = mgr._videoFailObject.TimeOfNextVideoLoss + mgr._videoFailObject.VideoLossDuration;
+		}
+
+		public static void incrementVideoFailureDuration(IHasVideoThatCanFail failer, float put, VideoFailManager mgr) {
+			float orig = put-15;
+			put = Mathf.Min(Mathf.Min(30, mgr._videoFailObject.TimeTilNextFailMin/3), orig+5); //+5, not +15, and never >min(30, fail interval/3)
+			if (mgr._videoFailObject is DungeonInfo) { //schematic view
+				put = Mathf.Min(put, 10); //never more than 10 seconds
+			}
+			failer.VideoLossDuration = put;
+		}
+
+		public static void setShipScrapCapacity(DungeonInfo info, int amt) {
+			info.ScrapMax = (int)Mathf.Clamp(Mathf.Pow(amt, 0.5F)*15, 50, 200); //(int)Mathf.Clamp(Mathf.Pow(amt, 0.6F)*8, 50, 200);
 		}
 
 	}

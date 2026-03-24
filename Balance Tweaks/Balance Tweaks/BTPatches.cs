@@ -142,6 +142,72 @@ namespace ReikaKalseki.BalanceTweaks {
 			}
 		}
 
+		[HarmonyPatch(typeof(VideoFailManager))]
+		[HarmonyPatch("CalcInitialVideoSignalLossInfo")]
+
+		public static class InitialVideoFailDurationHook {
+
+			public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
+				List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
+				try {
+					InstructionHandlers.patchEveryReturnPre(codes, new CodeInstruction(OpCodes.Ldarg_0), InstructionHandlers.createMethodCall("ReikaKalseki.BalanceTweaks.BTMod", "onInitVideoFailure", new Type[] { typeof(VideoFailManager) }));
+					FileLog.Log("Done patch " + MethodBase.GetCurrentMethod().DeclaringType);
+				}
+				catch (Exception e) {
+					FileLog.Log("Caught exception when running patch " + MethodBase.GetCurrentMethod().DeclaringType + "!");
+					FileLog.Log(e.Message);
+					FileLog.Log(e.StackTrace);
+					FileLog.Log(e.ToString());
+				}
+				return codes.AsEnumerable();
+			}
+		}
+
+		[HarmonyPatch(typeof(VideoFailManager))]
+		[HarmonyPatch("CalcTimeToNextVideoSignalLost")]
+
+		public static class VideoFailDurationIncrementHook {
+
+			public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
+				List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
+				try {
+					int idx = InstructionHandlers.getInstruction(codes, 0, 0, OpCodes.Callvirt, "IHasVideoThatCanFail", "set_VideoLossDuration", new Type[] { typeof(float) });
+					codes[idx] = InstructionHandlers.createMethodCall("ReikaKalseki.BalanceTweaks.BTMod", "incrementVideoFailureDuration", new Type[] { typeof(IHasVideoThatCanFail), typeof(float), typeof(VideoFailManager) });
+					codes.Insert(idx, new CodeInstruction(OpCodes.Ldarg_0));
+					FileLog.Log("Done patch " + MethodBase.GetCurrentMethod().DeclaringType);
+				}
+				catch (Exception e) {
+					FileLog.Log("Caught exception when running patch " + MethodBase.GetCurrentMethod().DeclaringType + "!");
+					FileLog.Log(e.Message);
+					FileLog.Log(e.StackTrace);
+					FileLog.Log(e.ToString());
+				}
+				return codes.AsEnumerable();
+			}
+		}
+
+		[HarmonyPatch(typeof(GalaxyProcessor))]
+		[HarmonyPatch("BuildNormalDungeon", typeof(int), typeof(DungeonTypeEnum), typeof(StarSystemInfo), typeof(int), typeof(int))]
+
+		public static class ShipScrapCapacityHook {
+
+			public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
+				List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
+				try {
+					int idx = InstructionHandlers.getInstruction(codes, 0, 0, OpCodes.Callvirt, "DungeonInfo", "set_ScrapMax", new Type[] { typeof(int) });
+					codes[idx] = InstructionHandlers.createMethodCall("ReikaKalseki.BalanceTweaks.BTMod", "setShipScrapCapacity", new Type[] { typeof(DungeonInfo), typeof(int) });
+					FileLog.Log("Done patch " + MethodBase.GetCurrentMethod().DeclaringType);
+				}
+				catch (Exception e) {
+					FileLog.Log("Caught exception when running patch " + MethodBase.GetCurrentMethod().DeclaringType + "!");
+					FileLog.Log(e.Message);
+					FileLog.Log(e.StackTrace);
+					FileLog.Log(e.ToString());
+				}
+				return codes.AsEnumerable();
+			}
+		}
+
 		internal static class PatchLib {
 
 			internal static bool redirectScrapCost(Type t) {

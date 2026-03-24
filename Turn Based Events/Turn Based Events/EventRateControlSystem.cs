@@ -73,6 +73,8 @@ namespace ReikaKalseki.TBE {
 
 		public static float currentBonusFactor { get; private set; }
 
+		private static readonly Dictionary<TransporterShipUpgrade.ReceiverData, float> lastTransporterMessage = new Dictionary<TransporterShipUpgrade.ReceiverData, float>();
+
 		static EventRateControlSystem() {
 			randomizeBonus();
 		}
@@ -139,14 +141,19 @@ namespace ReikaKalseki.TBE {
 			return true;
 		}
 
-		private static bool tryAdvanceTransporter(float originalTimeDelay) {
-			int needed = Mathf.RoundToInt(originalTimeDelay/20); //one move per 20s of original delay, typically [120-300] or [240-600] -> [6-15] or [12-30]
+		private static bool tryAdvanceTransporter(TransporterShipUpgrade.ReceiverData data) {
+			int needed = Mathf.RoundToInt(data.delayUntilEventChange/20); //one move per 30s of original delay, typically [120-300] or [240-600] -> [4-10] or [8-20]
 			string frac = string.Format("{0}/{1}", commandsSinceTransporterProgression, needed);
 			if (commandsSinceTransporterProgression < needed) {
-				DSUtil.log("Transporter failed to progress because command threshold not met: " + frac);
+				float time = Time.time;
+				float last = lastTransporterMessage.ContainsKey(data) ? lastTransporterMessage[data] : -1;
+				if (time - last > 1) {
+					DSUtil.log("Transporter link with room "+data.receiver.roomLocation.LabelSimple+" failed to progress because command threshold not met: " + frac);
+					lastTransporterMessage[data] = time;
+				}
 				return false;
 			}
-			DSUtil.log("Transporter progressed at command threshold " + frac);
+			DSUtil.log("Transporter link with room "+data.receiver.roomLocation.LabelSimple+" progressed at command threshold " + frac);
 			commandsSinceTransporterProgression = 0;
 			return true;
 		}
@@ -504,7 +511,7 @@ namespace ReikaKalseki.TBE {
 					if (!receiverData.receiver.IsOffline) {
 						switch (receiverData.CurrentStrength) {
 							case TransporterShipUpgrade.ReceiverStrengthEnum.Strong:
-								if (tryAdvanceTransporter(receiverData.delayUntilEventChange)) {
+								if (tryAdvanceTransporter(receiverData)) {
 									receiverData.delayUntilEventChange = UnityEngine.Random.Range(120f, 300f) * upg.strengthErraticFactor;
 									receiverData.CurrentStrength = TransporterShipUpgrade.ReceiverStrengthEnum.Weak;
 									receiverData.receiver.SetDamaged();
@@ -513,7 +520,7 @@ namespace ReikaKalseki.TBE {
 								}
 								break;
 							case TransporterShipUpgrade.ReceiverStrengthEnum.Weak:
-								if (tryAdvanceTransporter(receiverData.delayUntilEventChange)) {
+								if (tryAdvanceTransporter(receiverData)) {
 									if (UnityEngine.Random.Range(0, 4) == 0) {
 										receiverData.CurrentStrength = TransporterShipUpgrade.ReceiverStrengthEnum.Strong;
 										receiverData.delayUntilEventChange = UnityEngine.Random.Range(240f, 600f) * upg.strengthErraticFactor;
@@ -532,7 +539,7 @@ namespace ReikaKalseki.TBE {
 								}
 								break;
 							case TransporterShipUpgrade.ReceiverStrengthEnum.None:
-								if (tryAdvanceTransporter(receiverData.delayUntilEventChange)) {
+								if (tryAdvanceTransporter(receiverData)) {
 									if (UnityEngine.Random.Range(0, 4) == 0) {
 										receiverData.CurrentStrength = TransporterShipUpgrade.ReceiverStrengthEnum.Weak;
 										receiverData.delayUntilEventChange = UnityEngine.Random.Range(120f, 300f) * upg.strengthErraticFactor;
@@ -551,7 +558,7 @@ namespace ReikaKalseki.TBE {
 								break;
 						}
 					}
-					else if (tryAdvanceTransporter(receiverData.delayUntilEventChange)) {
+					else if (tryAdvanceTransporter(receiverData)) {
 						receiverData.receiver.BringOnline();
 						receiverData.receiver.roomLocation.ExternallyMarkAsOnSchematic();
 						receiverData.CurrentStrength = TransporterShipUpgrade.ReceiverStrengthEnum.Weak;

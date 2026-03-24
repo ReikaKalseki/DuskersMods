@@ -23,7 +23,7 @@ namespace ReikaKalseki.Upgrades {
 
 		protected override bool performAction(ExecutedCommand cmd) {
 			string target = cmd.Arguments[cmd.Arguments.Count-1];
-			door.setObject(new TargetableRoomObject(WorldUtil.findDoor(target)));
+			door.setObject(WorldUtil.findDoor(target));
 			if (door.roomObject != null && ((Door)door.roomObject).corridor.containsRoom(drone.CurrentRoom)) {
 				Door d = (Door)door.roomObject;
 				if (door.checkAtElseNavToAndTryAgain(drone, cmd)) {
@@ -59,7 +59,7 @@ namespace ReikaKalseki.Upgrades {
 
 		public override void CancelAbility() {
 			base.CancelAbility();
-			if (door.roomObject != null) {
+			if (door.roomObject is Door) {
 				((Door)door.roomObject).power(false);
 			}
 			door.setObject(null);

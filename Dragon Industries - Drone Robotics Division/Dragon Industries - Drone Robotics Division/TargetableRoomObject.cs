@@ -17,9 +17,9 @@ namespace ReikaKalseki.DIDrones {
 		}
 
 		public void setObject(object o) {
+			roomObject = o;
 			if (o == null)
 				return;
-			roomObject = o;
 			if (o is Drone)
 				type = TargetableType.DRONE;
 			else if (o is RoomItem)

@@ -105,7 +105,18 @@ namespace ReikaKalseki.DIDrones {
 				cmd.Handled = true;
 			}
 			else {
-				ic.ExecuteCommand(cmd, multi);
+				try {
+					GlobalSettings.GameState.ThePlayer.MyShip.AddEmptySlot();
+					GlobalSettings.GameState.ThePlayer.MyShip.AddEmptySlot();
+					ic.ExecuteCommand(cmd, multi);
+				}
+				catch (Exception ex) {
+					ConsoleWindow3.SendConsoleResponse(string.Format("Game/mod error: Command threw exception: {0}", ex.GetType().Name), ConsoleMessageType.Error);
+					ConsoleWindow3.SendConsoleResponse("Check your output_log.txt for more information.", ConsoleMessageType.Info);
+					DSUtil.log(string.Format("Threw exception processing command '{0}': {1}", cmd.Command.CommandName, ex.ToString()), DSUtil.diDLL);
+					cmd.Handled = false;
+					return;
+				}
 			}
 			if (cmd.Handled) {
 				DSUtil.log(string.Format("Logged command '{0} {1}'", cmd.Command.CommandName, string.Join(" ", cmd.Arguments.ToArray())), DSUtil.diDLL);
@@ -113,6 +124,14 @@ namespace ReikaKalseki.DIDrones {
 				if (onCommandEvent != null)
 					onCommandEvent.Invoke(ic, cmd, multi);
 			}
+		}
+
+		public static void onLoadShipSlotsA(DungeonInfo dg) {
+			
+		}
+
+		public static void onLoadShipSlotsB(DungeonInfo dg) {
+			
 		}
 
 		public static void onSetBoardingUISlot(BoardingConfigInventorySlot slot, IInventoryItem ii) {
