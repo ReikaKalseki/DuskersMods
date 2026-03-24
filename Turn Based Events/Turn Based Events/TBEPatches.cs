@@ -8,6 +8,8 @@ using System.Reflection.Emit;
 using HarmonyLib;
 using UnityEngine;  //Needed for most Unity Enginer manipulations: Vectors, GameObjects, Audio, etc.
 using ReikaKalseki.DIDrones;
+using Duskers.EnemyStates;
+using System.CodeDom;
 
 namespace ReikaKalseki.TBE {
 
@@ -212,6 +214,51 @@ namespace ReikaKalseki.TBE {
 				List<CodeInstruction> codes = new List<CodeInstruction>();
 				try {
 					codes = PatchLib.redirectEventMethod("tickTransporterUpgrade", typeof(TransporterShipUpgrade));
+					FileLog.Log("Done patch " + MethodBase.GetCurrentMethod().DeclaringType);
+				}
+				catch (Exception e) {
+					FileLog.Log("Caught exception when running patch " + MethodBase.GetCurrentMethod().DeclaringType + "!");
+					FileLog.Log(e.Message);
+					FileLog.Log(e.StackTrace);
+					FileLog.Log(e.ToString());
+				}
+				return codes.AsEnumerable();
+			}
+		}
+
+		[HarmonyPatch(typeof(StatePatrolIdle))]
+		[HarmonyPatch("DecideDoorToChew")]
+
+		public static class DoorChewRedirect {
+
+			public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
+				List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
+				try {
+					int idx = InstructionHandlers.getInstruction(codes, 0, 0, OpCodes.Call, "StatePatrolIdle", "CheckForDoorToChewGeneral", new Type[0]);
+					codes[idx] = InstructionHandlers.createMethodCall("ReikaKalseki.TBE.EventRateControlSystem", "checkForDoorToChew", new Type[] { typeof(StatePatrolIdle) });
+					FileLog.Log("Done patch " + MethodBase.GetCurrentMethod().DeclaringType);
+				}
+				catch (Exception e) {
+					FileLog.Log("Caught exception when running patch " + MethodBase.GetCurrentMethod().DeclaringType + "!");
+					FileLog.Log(e.Message);
+					FileLog.Log(e.StackTrace);
+					FileLog.Log(e.ToString());
+				}
+				return codes.AsEnumerable();
+			}
+		}
+
+		[HarmonyPatch(typeof(StatePatrolChewDoor))]
+		[HarmonyPatch("Update")]
+
+		public static class DoorChewTickRedirect {
+
+			public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
+				List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
+				try {
+					int idx = InstructionHandlers.getInstruction(codes, 0, 0, OpCodes.Callvirt, "Door", "TakeDamage", new Type[]{ typeof(float), typeof(DamageType), typeof(ICombatTarget) });
+					codes[idx] = InstructionHandlers.createMethodCall("ReikaKalseki.TBE.EventRateControlSystem", "dealDoorChewDamage", new Type[] { typeof(Door), typeof(float), typeof(DamageType), typeof(ICombatTarget), typeof(StatePatrolChewDoor) });
+					codes.Insert(idx, new CodeInstruction(OpCodes.Ldarg_0));
 					FileLog.Log("Done patch " + MethodBase.GetCurrentMethod().DeclaringType);
 				}
 				catch (Exception e) {

@@ -210,11 +210,11 @@ namespace ReikaKalseki.BalanceTweaks {
 
 		internal static class PatchLib {
 
-			internal static bool redirectScrapCost(Type t) {
+			internal static bool redirectScrapCost(BTMod mod, Type t) {
 				PropertyInfo p = t.GetProperty("ScrapCost");
 				if (p == null)
 					return false;
-				InstructionHandlers.patchMethod(BTMod.instance.harmony, p.GetGetMethod(), BTMod.modDLL, li => {
+				InstructionHandlers.patchMethod(BTMod.instance.harmony, p.GetGetMethod(), mod.modDLL, li => {
 					li.Clear();
 					li.Add(new CodeInstruction(OpCodes.Ldarg_0));
 					li.Add(InstructionHandlers.createMethodCall("ReikaKalseki.BalanceTweaks.BTMod", "getModScrapCost", new Type[] { typeof(IModification) }));

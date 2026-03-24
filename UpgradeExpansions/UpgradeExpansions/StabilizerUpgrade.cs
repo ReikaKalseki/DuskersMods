@@ -24,7 +24,7 @@ namespace ReikaKalseki.Upgrades {
 			Room room = drone.CurrentRoom;
 			TargetableRoomObject target = new TargetableRoomObject(room.GetRoomItem(typeof(DungeonTerminal), false));
 			if (target.roomObject == null) {
-				SendConsoleResponseMessage("No terminals in room: "+room.LabelSimple, ConsoleMessageType.Warning);
+				SendConsoleResponseMessage("No terminals in room: "+room.Label, ConsoleMessageType.Warning);
 				return false;
 			}
 
@@ -41,7 +41,7 @@ namespace ReikaKalseki.Upgrades {
 					TerminalManager.Instance.hasDefenses = true;
 					TerminalManager.Instance.hasShipScan = true;
 					TerminalManager.Instance.hasSurvey = true;
-					SendConsoleResponseMessage("Successfully hacked terminal system in room " + room.LabelSimple, ConsoleMessageType.Benefit);
+					SendConsoleResponseMessage("Successfully hacked terminal system in room " + room.Label, ConsoleMessageType.Benefit);
 					return true;
 				}
 			}

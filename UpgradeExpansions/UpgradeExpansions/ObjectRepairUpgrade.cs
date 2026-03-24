@@ -52,7 +52,7 @@ namespace ReikaKalseki.Upgrades {
 					target = new TargetableRoomObject(room.GetRoomItem(type, false));
 			}
 			
-			string rname = room.LabelSimple;
+			string rname = room.Label;
 			if (target.roomObject == null) {
 				SendConsoleResponseMessage(string.Format("No {0} of {1} '{2}' found in room {3}", wantDoor ? "door" : "object", wantDoor ? "name" : "type", arg, rname), ConsoleMessageType.Warning);
 				return false;

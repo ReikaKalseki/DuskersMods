@@ -4,34 +4,14 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 
+using Duskers.EnemyStates;
+
 using ReikaKalseki.DIDrones;
 
 using UnityEngine;
 
 namespace ReikaKalseki.TBE {
 	internal class EventRateControlSystem {
-
-		public static readonly int MIN_EXTRA_MOVES_FLAT = 0;
-		public static readonly int MIN_EXTRA_MOVES_PCT = 0;
-		public static readonly int MAX_EXTRA_MOVES_FLAT = 8;
-		public static readonly int MAX_EXTRA_MOVES_PCT = 30;
-
-		public static readonly int COMMANDS_FOR_IMMINENT_AIRLOCK_FAILURE = 2;
-		public static readonly int COMMANDS_FOR_AIRLOCK_FAILURE_SECOND_STAGE = 6;
-		public static readonly int COMMANDS_FOR_QUEUED_AIRLOCK_FAILURE = 15;
-		public static readonly int COMMANDS_FOR_AIRLOCK_RETRY_FAILURE = 5;
-
-		public static readonly int COMMANDS_FOR_ASTEROID_HIT = 7; // + 3-16 = 10-23
-		public static readonly int MIN_COMMANDS_FOR_ASTEROID_WARNING = 5;
-		public static readonly int COMMANDS_FOR_ASTEROID_QUEUE = 30;
-
-		public static readonly int COMMANDS_FOR_DOOR_FAILURE = 5;
-
-		public static readonly int COMMANDS_FOR_CLOSE_FAILURE = 20;
-		public static readonly int COMMANDS_FOR_CLOSE_FAILURE_WARN = 80;
-
-		public static readonly int COMMANDS_FOR_RADIATION_PIPE_BREAK = 4;
-		public static readonly int COMMANDS_FOR_RADIATION_PIPE_GROAN = 50;
 
 		private static readonly Dictionary<string, int> commandCostTable = new Dictionary<string, int>{ //default not-specified is 1
 			{ "alias", 0 }, //meta-commands, not in-universe actions
@@ -70,6 +50,7 @@ namespace ReikaKalseki.TBE {
 
 		public static int commandsSinceEventProgression { get; private set; }
 		public static int commandsSinceTransporterProgression { get; private set; }
+		public static int commandsSinceDoorChewProgression { get; private set; }
 
 		public static float currentBonusFactor { get; private set; }
 
@@ -121,15 +102,25 @@ namespace ReikaKalseki.TBE {
 			}
 		}
 
+		private static int getBaseCommandThreshold(TBConfig.ConfigEntries cfg) {
+			return TBEMod.instance.config.getInt(cfg);
+		}
+
 		private static bool tryAdvanceEvent(BaseGameEvent evt, int necessaryCommands) {
 			return tryAdvanceEvent(evt.GetType().Name, necessaryCommands);
 		}
 
 		private static bool tryAdvanceEvent(string evtn, int necessaryCommands) {
-			int bonusFlat = Mathf.RoundToInt(Mathf.Lerp(MIN_EXTRA_MOVES_FLAT, MAX_EXTRA_MOVES_FLAT, currentBonusFactor));
-			float bonusPct = Mathf.Lerp(MIN_EXTRA_MOVES_PCT, MAX_EXTRA_MOVES_PCT, currentBonusFactor);
+			int minflat = TBEMod.instance.config.getInt(TBConfig.ConfigEntries.MIN_EXTRA_MOVES_FLAT);
+			int maxflat = TBEMod.instance.config.getInt(TBConfig.ConfigEntries.MAX_EXTRA_MOVES_FLAT);
+			float minpct = TBEMod.instance.config.getFloat(TBConfig.ConfigEntries.MIN_EXTRA_MOVES_PCT);
+			float maxpct = TBEMod.instance.config.getFloat(TBConfig.ConfigEntries.MAX_EXTRA_MOVES_PCT);
+			int bonusFlat = Mathf.RoundToInt(Mathf.Lerp(minflat, maxflat, currentBonusFactor));
+			float bonusPct = Mathf.Lerp(minpct, maxpct, currentBonusFactor);
 			int bonusNet = Mathf.Max(bonusFlat, Mathf.RoundToInt(bonusPct/100F*necessaryCommands));
 			int needed = necessaryCommands+bonusNet;
+			needed = (int)(needed * TBEMod.instance.config.getFloat(TBConfig.ConfigEntries.THRESHOLD_SCALAR));
+			needed = (int)(needed * TBEMod.instance.config.getFloat(TBConfig.ConfigEntries.EVENT_SCALAR));
 			string frac = string.Format("{0}/[{1} (@ {2} -> +{3}={4})]", commandsSinceEventProgression, necessaryCommands, currentBonusFactor, bonusNet, needed);
 			if (commandsSinceEventProgression < needed) {
 				DSUtil.log("Event " + evtn + " failed to progress because command threshold not met: " + frac);
@@ -143,18 +134,34 @@ namespace ReikaKalseki.TBE {
 
 		private static bool tryAdvanceTransporter(TransporterShipUpgrade.ReceiverData data) {
 			int needed = Mathf.RoundToInt(data.delayUntilEventChange/20); //one move per 30s of original delay, typically [120-300] or [240-600] -> [4-10] or [8-20]
+			needed = (int)(needed * TBEMod.instance.config.getFloat(TBConfig.ConfigEntries.THRESHOLD_SCALAR));
+			needed = (int)(needed * TBEMod.instance.config.getFloat(TBConfig.ConfigEntries.TRANSPORTER_SCALAR));
 			string frac = string.Format("{0}/{1}", commandsSinceTransporterProgression, needed);
 			if (commandsSinceTransporterProgression < needed) {
 				float time = Time.time;
 				float last = lastTransporterMessage.ContainsKey(data) ? lastTransporterMessage[data] : -1;
 				if (time - last > 1) {
-					DSUtil.log("Transporter link with room "+data.receiver.roomLocation.LabelSimple+" failed to progress because command threshold not met: " + frac);
+					DSUtil.log("Transporter link with room "+data.receiver.roomLocation.Label+" failed to progress because command threshold not met: " + frac);
 					lastTransporterMessage[data] = time;
 				}
 				return false;
 			}
-			DSUtil.log("Transporter link with room "+data.receiver.roomLocation.LabelSimple+" progressed at command threshold " + frac);
+			DSUtil.log("Transporter link with room "+data.receiver.roomLocation.Label+" progressed at command threshold " + frac);
 			commandsSinceTransporterProgression = 0;
+			return true;
+		}
+
+		private static bool tryAdvanceDoorChew(BaseEnemyState state, int needed) {
+			needed = (int)(needed * TBEMod.instance.config.getFloat(TBConfig.ConfigEntries.THRESHOLD_SCALAR));
+			needed = (int)(needed * TBEMod.instance.config.getFloat(TBConfig.ConfigEntries.SWARM_SCALAR));
+			string frac = string.Format("{0}/{1}", commandsSinceDoorChewProgression, needed);
+			string loc = string.Format("{0} in room {1}", state._brain.ThisEnemy.GetType().Name, state._brain.ThisEnemy.CurrentRoom.Label);
+			if (commandsSinceDoorChewProgression < needed) {
+				DSUtil.log("Door chew for " + loc + " failed to progress because command threshold not met: " + frac);
+				return false;
+			}
+			DSUtil.log("Door chew for " + loc + " progressed at command threshold " + frac);
+			commandsSinceDoorChewProgression = 0;
 			return true;
 		}
 
@@ -170,7 +177,7 @@ namespace ReikaKalseki.TBE {
 					AirlockSealFailEvent.BreakingAirlock breakingAirlock = evt.processingAirlocks[i];
 					if (breakingAirlock.isBreaking) {
 						if (breakingAirlock.hasShownSecondWarning) {
-							if (tryAdvanceEvent(evt, COMMANDS_FOR_IMMINENT_AIRLOCK_FAILURE)) {
+							if (tryAdvanceEvent(evt, getBaseCommandThreshold(TBConfig.ConfigEntries.IMMINENT_AIRLOCK_FAILURE))) {
 								breakingAirlock.airlock.door.EndSealFailureVisual();
 								breakingAirlock.airlock.door.TakeDamage(1000f, DamageType.Physical, null);
 								if (breakingAirlock.airlock.onSchematic) {
@@ -201,7 +208,7 @@ namespace ReikaKalseki.TBE {
 							}
 						}
 						else {
-							if (tryAdvanceEvent(evt, COMMANDS_FOR_AIRLOCK_FAILURE_SECOND_STAGE)) {
+							if (tryAdvanceEvent(evt, getBaseCommandThreshold(TBConfig.ConfigEntries.AIRLOCK_FAILURE_SECOND_STAGE))) {
 								breakingAirlock.hasShownSecondWarning = true;
 								if (breakingAirlock.airlock.door.onSchematic) {
 									SystemMessageManager.ShowSystemMessage(string.Format("Airlock '{0}': seal failure imminent!", breakingAirlock.airlock.door.Label), ConsoleMessageType.Warning);
@@ -213,7 +220,7 @@ namespace ReikaKalseki.TBE {
 						}
 					}
 					else if (breakingAirlock.isPendingRestartEvent) {
-						if (tryAdvanceEvent(evt, COMMANDS_FOR_AIRLOCK_RETRY_FAILURE)) {
+						if (tryAdvanceEvent(evt, getBaseCommandThreshold(TBConfig.ConfigEntries.AIRLOCK_RETRY_FAILURE))) {
 							breakingAirlock.isPendingRestartEvent = false;
 							breakingAirlock.isBreaking = true;
 							breakingAirlock.airlock.door.BeginSealFailureVisual();
@@ -249,7 +256,7 @@ namespace ReikaKalseki.TBE {
 			}
 			while (corridor == null && num < 100);
 
-			if (corridor != null && tryAdvanceEvent(evt, COMMANDS_FOR_QUEUED_AIRLOCK_FAILURE)) {
+			if (corridor != null && tryAdvanceEvent(evt, getBaseCommandThreshold(TBConfig.ConfigEntries.QUEUED_AIRLOCK_FAILURE))) {
 				if (evt.processingAirlocks == null) {
 					evt.processingAirlocks = new List<AirlockSealFailEvent.BreakingAirlock>();
 				}
@@ -276,7 +283,7 @@ namespace ReikaKalseki.TBE {
 				for (int i = count - 1; i >= 0; i--) {
 					AsteroidEvent.SingleAsteroidEvent singleAsteroidEvent = evt.asteroidGroupList[i];
 					if (singleAsteroidEvent.warningFired) {
-						if (tryAdvanceEvent(evt, COMMANDS_FOR_ASTEROID_HIT)) {
+						if (tryAdvanceEvent(evt, getBaseCommandThreshold(TBConfig.ConfigEntries.ASTEROID_HIT))) {
 							evt.asteroidGroupList.RemoveAt(i);
 							bool flag = false;
 							int count2 = singleAsteroidEvent.potRoomList.Count;
@@ -311,7 +318,7 @@ namespace ReikaKalseki.TBE {
 							}
 						}
 					}
-					else if (tryAdvanceEvent(evt, MIN_COMMANDS_FOR_ASTEROID_WARNING + (int)(singleAsteroidEvent.timerIncomming / 30F))) { //event originally has a 90s-8min timer, apply some of that -> add 3-16 moves
+					else if (tryAdvanceEvent(evt, getBaseCommandThreshold(TBConfig.ConfigEntries.ASTEROID_WARNING) + (int)(singleAsteroidEvent.timerIncomming / 30F))) { //event originally has a 90s-8min timer, apply some of that -> add 3-16 moves
 						singleAsteroidEvent.warningFired = true;
 						singleAsteroidEvent.AdjustProbabilities();
 						//singleAsteroidEvent.DisplayProbabilities();
@@ -323,7 +330,7 @@ namespace ReikaKalseki.TBE {
 		}
 
 		public static void performAsteroids(AsteroidEvent evt) {
-			if (!tryAdvanceEvent(evt, COMMANDS_FOR_ASTEROID_QUEUE))
+			if (!tryAdvanceEvent(evt, getBaseCommandThreshold(TBConfig.ConfigEntries.ASTEROID_QUEUE)))
 				return;
 			AsteroidEvent.SingleAsteroidEvent singleAsteroidEvent = new AsteroidEvent.SingleAsteroidEvent(evt.rnd)
 		{
@@ -405,7 +412,7 @@ namespace ReikaKalseki.TBE {
 		//this is called not with a transpiler but with direct code in the base update above
 		public static void tickCloseCommand(CloseCommandEvent evt) {
 			if (GlobalSettings.CrippledCommandList != null && GlobalSettings.CrippledCommandList.Contains(warnedCloseFailure)) {
-				if (tryAdvanceEvent(evt, COMMANDS_FOR_CLOSE_FAILURE)) {
+				if (tryAdvanceEvent(evt, getBaseCommandThreshold(TBConfig.ConfigEntries.CLOSE_FAILURE))) {
 					GlobalSettings.CrippledCommandList.Remove(warnedCloseFailure);
 					GlobalSettings.CrippledCommandList.Add("close");
 					SystemMessageManager.ShowSystemMessage("Derelict no longer responding to 'close' command.", ConsoleMessageType.Error);
@@ -419,7 +426,7 @@ namespace ReikaKalseki.TBE {
 			}
 			if (GlobalSettings.CrippledCommandList.Contains(warnedCloseFailure))
 				return;
-			if (tryAdvanceEvent(evt, COMMANDS_FOR_CLOSE_FAILURE_WARN)) {
+			if (tryAdvanceEvent(evt, getBaseCommandThreshold(TBConfig.ConfigEntries.CLOSE_FAILURE_WARN))) {
 				GlobalSettings.CrippledCommandList.Add(warnedCloseFailure);
 				SystemMessageManager.ShowSystemMessage("Corruption detected in derelict command registry: 'close' command reliability impacted.", ConsoleMessageType.Warning);
 			}
@@ -438,7 +445,7 @@ namespace ReikaKalseki.TBE {
 				num++;
 			}
 			while (door == null && num < 100);
-			if (door != null && tryAdvanceEvent(evt, COMMANDS_FOR_DOOR_FAILURE)) {
+			if (door != null && tryAdvanceEvent(evt, getBaseCommandThreshold(TBConfig.ConfigEntries.DOOR_FAILURE))) {
 				door.DisconnectDoor();
 				SystemMessageManager.ShowSystemMessage(string.Format("System error: door '{0}' no longer responding", door.Label), ConsoleMessageType.Error);
 			}
@@ -462,7 +469,7 @@ namespace ReikaKalseki.TBE {
 				}
 				num++;
 			}
-			if (room != null && tryAdvanceEvent(evt, COMMANDS_FOR_RADIATION_PIPE_GROAN)) {
+			if (room != null && tryAdvanceEvent(evt, getBaseCommandThreshold(TBConfig.ConfigEntries.RADIATION_PIPE_GROAN))) {
 				//redirect room.NaturalRadiateEvent();
 				SystemMessageManager.ShowSystemMessage(string.Format("Overpressure in reactor coolant pipe in room '{0}'", room.Label), ConsoleMessageType.Warning);
 				setupPipeBreakInRoom(room);
@@ -485,7 +492,7 @@ namespace ReikaKalseki.TBE {
 		}
 
 		public static void radiateRoomRedirect(Room r, string msg) {
-			if (tryAdvanceEvent("RadiateRoom", COMMANDS_FOR_RADIATION_PIPE_BREAK))
+			if (tryAdvanceEvent("RadiateRoom", getBaseCommandThreshold(TBConfig.ConfigEntries.RADIATION_PIPE_BREAK)))
 				r.Radiate(msg);
 			else
 				r.IsInPreNaturalRadiationState = true; //re-set state and try again next time
@@ -596,6 +603,21 @@ namespace ReikaKalseki.TBE {
 			if (upg.failSafe) {
 				upg.timerLastAttempt -= Time.deltaTime;
 			}
+		}
+
+		public static Door checkForDoorToChew(StatePatrolIdle state) {
+			if (!tryAdvanceDoorChew(state, getBaseCommandThreshold(TBConfig.ConfigEntries.CHEW_START)))
+				return null;
+			Door d = state.CheckForDoorToChewGeneral();
+			if (d != null && !d.corridor.IsAirlock)
+				ConsoleWindow3.SendConsoleResponse(state._brain.ThisEnemy.GetType().Name+" has begun targeting door "+d.Label, ConsoleMessageType.Warning);
+			return d;
+		}
+
+		public static void dealDoorChewDamage(Door d, float amt, DamageType type, ICombatTarget dealer, StatePatrolChewDoor state) {
+			if (amt >= d.CurrentHitPoints && !tryAdvanceDoorChew(state, getBaseCommandThreshold(TBConfig.ConfigEntries.CHEW_BREAK)))
+				return;
+			d.TakeDamage(amt, type, dealer);
 		}
 	}
 }

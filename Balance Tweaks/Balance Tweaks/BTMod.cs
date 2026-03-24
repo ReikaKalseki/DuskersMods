@@ -4,6 +4,7 @@ using System.Reflection;
 using System.IO;
 
 using BepInEx;
+using BepInEx.Configuration;
 
 using ReikaKalseki.DIDrones;
 
@@ -16,120 +17,83 @@ namespace ReikaKalseki.BalanceTweaks {
 
 	[BepInPlugin("ReikaKalseki.BTMod", "BalanceTweaks", "1.0.0")]
 	[BepInDependency("ReikaKalseki.DIMod")]
-	public class BTMod : BaseUnityPlugin {
-
-		public static BTMod instance;
-
-		public Harmony harmony;
-
-		public static Assembly modDLL;
-
-		public static bool forceAllowVisit = true;
+	public class BTMod : DIModBase {
 
 		public static readonly Dictionary<string, int> modScrapCosts = new Dictionary<string, int>();
 
+		public static BTMod instance;
+
 		public BTMod() : base() {
 			instance = this;
-			DSUtil.log("Constructed BalanceTweaks object", DSUtil.diDLL);
-
-			modDLL = Assembly.GetExecutingAssembly();
+			config.addSettings(typeof(BTConfig.ConfigEntries));
 		}
 
-		public void Awake() {
-			DSUtil.log("Begin Initializing BalanceTweaks");
-			try {
-				harmony = new Harmony("BalanceTweaks");
-				Harmony.DEBUG = true;
-				FileLog.logPath = Path.Combine(Path.GetDirectoryName(modDLL.Location), "harmony-log_" + Path.GetFileName(Assembly.GetExecutingAssembly().Location) + ".txt");
-				FileLog.Log("Ran mod register, started harmony (harmony log)");
-				DSUtil.log("Ran mod register, started harmony");
-				try {
-					harmony.PatchAll(modDLL);
-				}
-				catch (Exception ex) {
-					FileLog.Log("Caught exception when running patchers!");
-					FileLog.Log(ex.Message);
-					FileLog.Log(ex.StackTrace);
-					FileLog.Log(ex.ToString());
-				}
+		protected override void addAdditionalConfig() {
+			List<string> mods = new List<string>() {
+				"AddRepairJuiceMod",
+				"BaseResupplyMod",
+				"CannonRechargeMod",
+				"CraftFuelMod",
+				"CraftGathererMod",
+				"CraftGeneratorMod",
+				"CraftTowMod",
+				"DecontaminateRechargeMod",
+				"DroneSpeedMod",
+				"IncreaseMaxHpMod",
+				"IncreaseProbeHpMod",
+				"MagneticMod",
+				"OverloadRechargeMod",
+				"ProbeStealthMod",
+				"RadiationDetectorMod",
+				//"RepairDroneUpgradeMod",
+				"RepairDroneVideoMod",
+				//"RepairFullHpMod",
+				"RepairHpMod",
+				"RepairShieldMod",
+				"RepairShipSlotMod",
+				//"RepairShipUpgradeMod",
+				"RepairShipVisualMod",
+				//"ScrapMod",
+				"ShieldRadiationMod",
+				"ShieldRechargeMod",
+				"SonicRechargeMod",
+				"StealthRechargeMod",
+				"TeleportMod",
+			};
+			foreach (string mod in mods)
+				getModDefaultCostAndPatchClass(mod);
 
-				List<string> mods = new List<string>() {
-					"AddRepairJuiceMod",
-					"BaseResupplyMod",
-					"CannonRechargeMod",
-					"CraftFuelMod",
-					"CraftGathererMod",
-					"CraftGeneratorMod",
-					"CraftTowMod",
-					"DecontaminateRechargeMod",
-					"DroneSpeedMod",
-					"IncreaseMaxHpMod",
-					"IncreaseProbeHpMod",
-					"MagneticMod",
-					"OverloadRechargeMod",
-					"ProbeStealthMod",
-					"RadiationDetectorMod",
-					//"RepairDroneUpgradeMod",
-					"RepairDroneVideoMod",
-					//"RepairFullHpMod",
-					"RepairHpMod",
-					"RepairShieldMod",
-					"RepairShipSlotMod",
-					//"RepairShipUpgradeMod",
-					"RepairShipVisualMod",
-					//"ScrapMod",
-					"ShieldRadiationMod",
-					"ShieldRechargeMod",
-					"SonicRechargeMod",
-					"StealthRechargeMod",
-					"TeleportMod",
-				};
-				foreach (string mod in mods)
-					getModDefaultCostAndPatchClass(mod);
+			config.addSettings("Modification Costs", modScrapCosts);
+		}
 
-				string dir = Path.GetDirectoryName(modDLL.Location);
-				string cfg = Path.Combine(dir, "ModCosts.txt");
-				if (File.Exists(cfg)) {
-					string[] lines = File.ReadAllLines(cfg);
-					foreach (string s in lines) {
-						string[] parts = s.Split('=');
-						string mod = parts[0];
-						if (!modScrapCosts.ContainsKey(mod)) {
-							DSUtil.log("Unrecognized scrap cost in config: '"+mod+"'; set:\n"+modScrapCosts.Keys.toDebugString());
-							continue;
-						}
-						int at = modScrapCosts[mod];
-						int put = int.Parse(parts[1]);
-						if (at != put) {
-							DSUtil.log(string.Format("Overriding cost of '{0}' modification: {1} -> {2}", mod, at, put));
-							modScrapCosts[mod] = put;
-						}
-					}
-				}
-				else {
-					List<string> li = new List<string>();
-					foreach (KeyValuePair<string, int> kvp in modScrapCosts)
-						li.Add(kvp.Key+"="+kvp.Value);
-					File.WriteAllLines(cfg, li.ToArray());
+		protected override void init() {
+			foreach (string mod in modScrapCosts.Keys) {
+				int at = modScrapCosts[mod];
+				int put = config.getValue<int>(mod);
+				if (at != put) {
+					DSUtil.log(string.Format("Overriding cost of '{0}' modification: {1} -> {2}", mod, at, put));
+					modScrapCosts[mod] = put;
 				}
 			}
-			catch (Exception e) {
-				DSUtil.log("Failed to load BalanceTweaks: " + e);
-			}
-			DSUtil.log("Finished Initializing BalanceTweaks");
 		}
 
 		public static bool isWreckVisited(DungeonInfo ship) {
-			return ship.HaveVisited && !forceAllowVisit;
+			return ship.HaveVisited && !instance.config.getBoolean(BTConfig.ConfigEntries.allowShipRevisit);
 		}
 
 		public static void initializeWreckRoomConstants(DungeonRoom r) {
-			r.roomMotionBrokenProbability = UnityEngine.Random.Range(0.25F, 0.5F); //from flat 50%
-			r.roomScannerBrokenProbability = UnityEngine.Random.Range(0F, 0.2F); //from 0-30%
+			float mmin = instance.config.getFloat(BTConfig.ConfigEntries.minMotionBrokenChance);
+			float mmax = instance.config.getFloat(BTConfig.ConfigEntries.maxMotionBrokenChance);
+			float smin = instance.config.getFloat(BTConfig.ConfigEntries.minScannerBrokenChance);
+			float smax = instance.config.getFloat(BTConfig.ConfigEntries.maxScannerBrokenChance);
+			r.roomMotionBrokenProbability = UnityEngine.Random.Range(mmin / 100F, mmax / 100F); //from flat 50%
+			r.roomScannerBrokenProbability = UnityEngine.Random.Range(smin / 100F, smax / 100F); //from 0-30%
 			DSUtil.log(string.Format("Adjusted room survey-broken probabilities: M={0}%, S={1}%", r.roomMotionBrokenProbability * 100, r.roomScannerBrokenProbability * 100));
 		}
 
 		public static void addFuelNode(List<RoomItem> li, FuelAccess f) {
+			if (!instance.config.getBoolean(BTConfig.ConfigEntries.forceEnoughFuel))
+				return;
 			int has = GlobalSettings.GameState.ThePlayer.Inventory.TotalPropulsionFuel;
 			DungeonInfo dg = WorldUtil.getClosestVisitableDungeon(false, false, true);
 			if (dg == null)
@@ -154,16 +118,16 @@ namespace ReikaKalseki.BalanceTweaks {
 			li.Add(f);
 		}
 
-		private static void getModDefaultCostAndPatchClass(string classname) {
+		private void getModDefaultCostAndPatchClass(string classname) {
 			getModDefaultCostAndPatchClass(InstructionHandlers.getTypeBySimpleName(classname));
 		}
 
-		private static void getModDefaultCostAndPatchClass(Type t) {
+		private void getModDefaultCostAndPatchClass(Type t) {
 			string name = t.Name;
 			name = name.Substring(0, name.Length - 3);
 			IModification mod = t == typeof(BaseResupplyMod) ? new AddMotionSensorsMod() : (IModification)Activator.CreateInstance(t);
 			int ret = -mod.ScrapCost;
-			if (BTPatches.PatchLib.redirectScrapCost(t)) {
+			if (BTPatches.PatchLib.redirectScrapCost(this, t)) {
 				modScrapCosts[name] = ret;
 			}
 		}
@@ -174,31 +138,37 @@ namespace ReikaKalseki.BalanceTweaks {
 			if (!modScrapCosts.ContainsKey(n) && mod is BaseResupplyMod)
 				n = "BaseResupply";
 			if (!modScrapCosts.ContainsKey(n)) {
-				DSUtil.log("Failed to fetch scrap cost of modification "+mod.DisplayName+" ("+mod.GetType().Name+") ["+n+"]!");
+				DSUtil.log("Failed to fetch scrap cost of modification " + mod.DisplayName + " (" + mod.GetType().Name + ") [" + n + "]!");
 				return 5;
 			}
 			return -modScrapCosts[n];
 		}
 
 		public static void onInitVideoFailure(VideoFailManager mgr) {
-			mgr._videoFailObject.VideoLossDuration = Mathf.Clamp(VideoFailManager._random.NextFloat(mgr._failDurationMinInitial*0.75F, mgr._failDurationMaxInitial*0.5F), 2, 5);
-			if (mgr._videoFailObject is DungeonInfo) { //schematic view
-				mgr._videoFailObject.VideoLossDuration = Mathf.Min(mgr._videoFailObject.VideoLossDuration, 1); //never more than 1 seconds at first
-			}
+			bool main = mgr._videoFailObject is DungeonInfo;
+			int tmin = main ? instance.config.getInt(BTConfig.ConfigEntries.minLengthMainInitialCameraFail) : instance.config.getInt(BTConfig.ConfigEntries.minLengthDroneInitialCameraFail);
+			int tmax = main ? instance.config.getInt(BTConfig.ConfigEntries.maxLengthMainInitialCameraFail) : instance.config.getInt(BTConfig.ConfigEntries.maxLengthDroneInitialCameraFail);
+			mgr._videoFailObject.VideoLossDuration = Mathf.Clamp(VideoFailManager._random.NextFloat(mgr._failDurationMinInitial * 0.75F, mgr._failDurationMaxInitial * 0.5F), tmin, tmax);
 			mgr._videoFailObject.TimeOfNextVideoRestore = mgr._videoFailObject.TimeOfNextVideoLoss + mgr._videoFailObject.VideoLossDuration;
 		}
 
 		public static void incrementVideoFailureDuration(IHasVideoThatCanFail failer, float put, VideoFailManager mgr) {
+			bool main = mgr._videoFailObject is DungeonInfo;
 			float orig = put-15;
-			put = Mathf.Min(Mathf.Min(30, mgr._videoFailObject.TimeTilNextFailMin/3), orig+5); //+5, not +15, and never >min(30, fail interval/3)
-			if (mgr._videoFailObject is DungeonInfo) { //schematic view
-				put = Mathf.Min(put, 10); //never more than 10 seconds
-			}
-			failer.VideoLossDuration = put;
+			float uptime = instance.config.getFloat(BTConfig.ConfigEntries.cameraMinFunctionLevel)/100F;
+			float maxDurUptime = mgr._videoFailObject.TimeTilNextFailMin*(1-uptime);
+			float hardLimit = main ? instance.config.getInt(BTConfig.ConfigEntries.maxLengthMainCameraFail) : instance.config.getInt(BTConfig.ConfigEntries.maxLengthDroneCameraFail);
+			float stepLimit = orig + instance.config.getInt(BTConfig.ConfigEntries.cameraFailDurationStep);
+
+			failer.VideoLossDuration = Mathf.Min(maxDurUptime, stepLimit, hardLimit);
 		}
 
 		public static void setShipScrapCapacity(DungeonInfo info, int amt) {
-			info.ScrapMax = (int)Mathf.Clamp(Mathf.Pow(amt, 0.5F)*15, 50, 200); //(int)Mathf.Clamp(Mathf.Pow(amt, 0.6F)*8, 50, 200);
+			int min = instance.config.getInt(BTConfig.ConfigEntries.minScrapCapacity);
+			int max = instance.config.getInt(BTConfig.ConfigEntries.maxScrapCapacity);
+			float f = instance.config.getFloat(BTConfig.ConfigEntries.scrapScalar);
+			float raw = instance.config.getBoolean(BTConfig.ConfigEntries.tightenScrapCurve) ? Mathf.Pow(amt, 0.5F)*15 : amt;
+			info.ScrapMax = (int)Mathf.Clamp(raw * f, min, max); //(int)Mathf.Clamp(Mathf.Pow(amt, 0.6F)*8, 50, 200);
 		}
 
 	}

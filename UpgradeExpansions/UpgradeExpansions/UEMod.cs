@@ -21,49 +21,27 @@ namespace ReikaKalseki.Upgrades {
 
 	[BepInPlugin("ReikaKalseki.UEMod", "UpgradeExpansions", "1.0.0")]
 	[BepInDependency("ReikaKalseki.DIMod")]
-	public class UEMod : BaseUnityPlugin {
+	public class UEMod : DIModBase {
 
 		public static UEMod instance;
 
-		public static Assembly modDLL;
-
-		public static bool forceAllowVisit;
-
 		public UEMod() : base() {
 			instance = this;
-			DSUtil.log("Constructed UpgradeExpansions object", DSUtil.diDLL);
-
-			modDLL = Assembly.GetExecutingAssembly();
+			config.addSettings(typeof(UEConfig.ConfigEntries));
 		}
 
-		public void Awake() {
-			DSUtil.log("Begin Initializing UpgradeExpansions");
-			try {
-				Harmony harmony = new Harmony("UpgradeExpansions");
-				Harmony.DEBUG = true;
-				FileLog.logPath = Path.Combine(Path.GetDirectoryName(modDLL.Location), "harmony-log_" + Path.GetFileName(Assembly.GetExecutingAssembly().Location) + ".txt");
-				FileLog.Log("Ran mod register, started harmony (harmony log)");
-				DSUtil.log("Ran mod register, started harmony");
-				try {
-					harmony.PatchAll(modDLL);
-				}
-				catch (Exception ex) {
-					FileLog.Log("Caught exception when running patchers!");
-					FileLog.Log(ex.Message);
-					FileLog.Log(ex.StackTrace);
-					FileLog.Log(ex.ToString());
-				}
-
+		protected override void init() {
+			if (config.getBoolean(UEConfig.ConfigEntries.enableDoorCharge))
 				new DoorChargerUpgradeContainer().register();
+			if (config.getBoolean(UEConfig.ConfigEntries.enableRepair))
 				new ObjectRepairUpgradeContainer().register();
+			if (config.getBoolean(UEConfig.ConfigEntries.enableDismantle))
 				new DismantleUpgradeContainer().register();
+			if (config.getBoolean(UEConfig.ConfigEntries.enableHack))
+				new TerminalHackUpgradeContainer().register();
 
+			if (config.getBoolean(UEConfig.ConfigEntries.enableModSlot))
 				ModUpgradeManager.Manager.RegisterModificationFor(typeof(NonVisualDrone), new AddDroneSlotMod());
-			}
-			catch (Exception e) {
-				DSUtil.log("Failed to load UpgradeExpansions: " + e);
-			}
-			DSUtil.log("Finished Initializing UpgradeExpansions");
 		}
 
 		public static void onCreateUpgrade() {
@@ -75,18 +53,22 @@ namespace ReikaKalseki.Upgrades {
 				return;
 			string arg = cmd.Arguments.Count == 0 ? null : cmd.Arguments[cmd.Arguments.Count-1];
 			if (arg == "upgrade") {
+				if (!instance.config.getBoolean(UEConfig.ConfigEntries.enableUpgradePry)) {
+					upg.SendConsoleResponseMessage("Pry is not enabled on upgrades in mod config.", ConsoleMessageType.Warning);
+					return;
+				}
 				cmd.Handled = true;
 				Room room = upg.drone.CurrentRoom;
 				TargetableRoomObject target = new TargetableRoomObject(WorldUtil.findTowableInRoom<ShipUpgradeInGameObject>(room, u => !u.ThisUpgrade.IsPermanentUpgrade && u.ShipUpgradeStatus == ShipUpgradeInGameObject.ShipUpgradeStatusEnum.InstalledWorking));
 				if (target.roomObject == null) {
-					upg.SendConsoleResponseMessage("No pry-able upgrade found in room: " + room.LabelSimple, ConsoleMessageType.Warning);
+					upg.SendConsoleResponseMessage("No pry-able upgrade found in room: " + room.Label, ConsoleMessageType.Warning);
 					return;
 				}
 				if (target.checkAtElseNavToAndTryAgain(upg.drone, cmd)) {
 					ShipUpgradeInGameObject obj = (ShipUpgradeInGameObject)target.roomObject;
 					obj.ShipUpgradeStatus = ShipUpgradeInGameObject.ShipUpgradeStatusEnum.InstalledWorkingLoose;
 					obj.CanBeTowed = true;
-					upg.SendConsoleResponseMessage("Successfully pried upgrade in room " + room.LabelSimple, ConsoleMessageType.Benefit);
+					upg.SendConsoleResponseMessage("Successfully pried upgrade in room " + room.Label, ConsoleMessageType.Benefit);
 				}
 			}
 			else if (arg != null && DSUtil.isDoorArg(arg)) {
