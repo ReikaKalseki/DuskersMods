@@ -7,70 +7,23 @@ using System.Text;
 using UnityEngine;
 
 namespace ReikaKalseki.DIDrones {
-	public class ChangeDroneCallsignMod : IModification {
+	public class ChangeDroneCallsignMod : ApplyableDroneUpgrade {
 
-		private NonVisualDrone _targetDrone;
+		public ChangeDroneCallsignMod() : base("Cycle callsign", "Changes a drone's callsign sound", 0) {
 
-		public ModificationStorageIdEnum ModificationStorageId {
-			get {
-				return ModificationStorageIdEnum.None;
-			}
 		}
 
-		public string DisplayName {
-			get {
-				return "Cycle callout";
-			}
+		protected override bool isValid(NonVisualDrone drone) {
+			return true;
 		}
 
-		public string Description {
-			get {
-				return "Changes a drone's callout sound";
-			}
-		}
-
-		public string TargetName {
-			get {
-				return ((IInventoryItem)_targetDrone).Name;
-			}
-		}
-
-		public int ScrapCost {
-			get {
-				return 0;
-			}
-		}
-
-		public int MaxAllowed {
-			get {
-				return 1;
-			}
-		}
-
-		public void SetTarget(object itemToReceiveMod) {
-			_targetDrone = (itemToReceiveMod as NonVisualDrone);
-		}
-
-		public bool CanApplyModToTarget() {
-			return _targetDrone != null;
-		}
-
-		public void ApplyModToTarget() {
-			if (_targetDrone == null) {
-				return;
-			}
-			_targetDrone.CSID = (_targetDrone.CSID+1)%13;
-			GameAudio.SoundEnum enm = (GameAudio.SoundEnum)((int)GameAudio.SoundEnum.DroneCS_1 + _targetDrone.CSID);
+		protected override void apply(NonVisualDrone drone) {
+			drone.CSID = (drone.CSID+1)%13;
+			GameAudio.SoundEnum enm = (GameAudio.SoundEnum)((int)GameAudio.SoundEnum.DroneCS_1 + drone.CSID);
 			GameAudio.LoadSFXIntoDict(enm);
 			DroneCallsignPreview dr = GalaxyMapManager.Instance.gameObject.AddComponent<DroneCallsignPreview>();
 			dr.sound = enm;
 			dr.StartCoroutine(dr.playAndRemove());
-		}
-
-		public IModification CopyModification() {
-			IModification ret = new ChangeDroneCallsignMod();
-			ret.SetTarget(_targetDrone);
-			return ret;
 		}
 
 		class DroneCallsignPreview : MonoBehaviour {
