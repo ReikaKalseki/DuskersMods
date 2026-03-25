@@ -31,17 +31,30 @@ namespace ReikaKalseki.AAE {
 			matcher = rule;
 		}
 
+		public override string ToString() {
+			return string.Format("{0}: S={1}/M={2}", GetType().Name, soundOverride == null ? "null" : soundOverride.ToString(), mute.ToString());
+		}
+
 		public abstract void writeToFile(XmlElement doc);
+
+		public static void writeToFileIfNew(string folder, string name, MessageSoundRule rule) {
+			string path = Path.Combine(folder, name+".xml");
+			if (File.Exists(path))
+				return;
+			writeToFile(folder, name, rule);
+		}
 
 		public static void writeToFile(string folder, string name, MessageSoundRule rule) {
 			XmlDocument doc = new XmlDocument();
 			doc.AppendChild(doc.CreateElement("root"));
 			rule.writeToFile(doc.DocumentElement);
 			string path = Path.Combine(folder, name+".xml");
-			doc.DocumentElement.addProperty("type", rule.GetType().Name.Substring("Message".Length));
-			doc.DocumentElement.addProperty("mute", rule.mute);
+			int s1 = "Message".Length;
+			string n = rule.GetType().Name;
+			doc.DocumentElement.addProperty("matchType", n.Substring(s1, n.Length-s1-"Rule".Length));
+			doc.DocumentElement.addProperty("muteSound", rule.mute);
 			if (rule.soundOverride.HasValue)
-				doc.DocumentElement.addProperty("override", Enum.GetName(typeof(GameAudio.SoundEnum), rule.soundOverride.Value));
+				doc.DocumentElement.addProperty("soundOverride", Enum.GetName(typeof(GameAudio.SoundEnum), rule.soundOverride.Value));
 			doc.Save(path);
 		}
 
@@ -49,7 +62,7 @@ namespace ReikaKalseki.AAE {
 			XmlDocument doc = new XmlDocument();
 			doc.Load(path);
 			XmlElement root = doc.DocumentElement;
-			string tname = "Message"+root.getProperty("type");
+			string tname = "Message"+root.getProperty("matchType")+"Rule";
 			Type t = InstructionHandlers.getTypeBySimpleName("ReikaKalseki.AAE."+tname);
 			if (t == null)
 				throw new Exception(string.Format("Unknown message rule type '{0}'!", tname));
@@ -61,6 +74,35 @@ namespace ReikaKalseki.AAE {
 			return (MessageSoundRule)m.Invoke(null, new object[] { root });
 		}
 
+	}
+
+	public class MessageTypeRule : MessageSoundRule {
+
+		private readonly ConsoleMessageType type;
+
+		public MessageTypeRule(string s, bool mute, ConsoleMessageType mtype) : base(s, mute, (msg, type) => type == mtype) {
+			type = mtype;
+		}
+
+		public override void writeToFile(XmlElement doc) {
+			doc.addProperty("type", Enum.GetName(typeof(ConsoleMessageType), type));
+		}
+
+		public static MessageTypeRule readFile(XmlElement doc) {
+			string type = doc.getProperty("type");
+			ConsoleMessageType mtype = ConsoleMessageType.None;
+			try {
+				mtype = (ConsoleMessageType)Enum.Parse(typeof(ConsoleMessageType), type);
+			}
+			catch (Exception e) {
+				throw new Exception(string.Format("Invalid console message type '{0}'; options are {1}", type, Enum.GetValues(typeof(ConsoleMessageType)).toDebugStringAlt()));
+			}
+			return new MessageTypeRule(doc.getProperty("soundOverride", true), doc.getBoolean("muteSound"), mtype);
+		}
+
+		public override string ToString() {
+			return string.Format("{0}: Type={1}", base.ToString(), type.ToString());
+		}
 	}
 
 	public class MessageRegexRule : MessageSoundRule {
@@ -76,7 +118,26 @@ namespace ReikaKalseki.AAE {
 		}
 
 		public static MessageRegexRule readFile(XmlElement doc) {
-			return new MessageRegexRule(doc.getProperty("override", true), doc.getBoolean("mute"), new Regex(doc.getProperty("pattern")));
+			return new MessageRegexRule(doc.getProperty("soundOverride", true), doc.getBoolean("muteSound"), new Regex(doc.getProperty("pattern")));
+		}
+
+		public override string ToString() {
+			return string.Format("{0}: '{1}'", base.ToString(), regex);
+		}
+	}
+
+	public class MessageAlwaysRule : MessageSoundRule {
+
+		public MessageAlwaysRule(string s, bool mute) : base(s, mute, (msg, type) => true) {
+
+		}
+
+		public override void writeToFile(XmlElement doc) {
+
+		}
+
+		public static MessageAlwaysRule readFile(XmlElement doc) {
+			return new MessageAlwaysRule(doc.getProperty("soundOverride", true), doc.getBoolean("muteSound"));
 		}
 	}
 }

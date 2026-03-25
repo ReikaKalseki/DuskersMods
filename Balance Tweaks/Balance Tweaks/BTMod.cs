@@ -67,7 +67,7 @@ namespace ReikaKalseki.BalanceTweaks {
 		}
 
 		protected override void init() {
-			foreach (string mod in modScrapCosts.Keys) {
+			foreach (string mod in new List<string>(modScrapCosts.Keys)) {
 				int at = modScrapCosts[mod];
 				int put = config.getValue<int>(mod);
 				if (at != put) {

@@ -33,17 +33,19 @@ namespace ReikaKalseki.AAE {
 			while (!path.EndsWith("BepInEx"))
 				path = Path.GetDirectoryName(path);
 			string folder = Path.Combine(Path.Combine(path, "config"), "AAE_Rules");
-			if (!Directory.Exists(folder)) {
+			if (!Directory.Exists(folder))
 				Directory.CreateDirectory(folder);
-				MessageSoundRule.writeToFile(folder, "EXAMPLE_Transporter", new MessageRegexRule(null, true, new Regex("(?i)transporter[a-zA-Z0-9 ]*signal(?-i)")));
-				MessageSoundRule.writeToFile(folder, "EXAMPLE_VideoSignal", new MessageRegexRule(GameAudio.SoundEnum.SensorUntriggered.ToString(), false, new Regex("(?i)video[a-zA-Z0-9 ]*signal(?-i)")));
-			}
+			MessageSoundRule.writeToFileIfNew(folder, "EXAMPLE_UniversalMute", new MessageAlwaysRule(null, true));
+			MessageSoundRule.writeToFileIfNew(folder, "EXAMPLE_ReplaceBellsWithBeep", new MessageTypeRule(GameAudio.SoundEnum.AlertWarning.ToString(), false, ConsoleMessageType.DisasterWarning));
+			MessageSoundRule.writeToFileIfNew(folder, "EXAMPLE_TransporterMute", new MessageRegexRule(null, true, new Regex("(?i)transporter[a-zA-Z0-9 ]*signal(?-i)")));
+			MessageSoundRule.writeToFileIfNew(folder, "EXAMPLE_VideoSignalLessAlarming", new MessageRegexRule(GameAudio.SoundEnum.SensorUntriggered.ToString(), false, new Regex("(?i)video[a-zA-Z0-9 ]*signal(?-i)")));
 			foreach (string file in Directory.GetFiles(folder)) {
 				if (file.StartsWith("EXAMPLE_"))
 					continue;
 				try {
 					MessageSoundRule rule = MessageSoundRule.readFromFile(file);
 					rules.Add(rule);
+					DSUtil.log(string.Format("Added message sound rule from config file '{0}': {1}", Path.GetFileName(file), rule.ToString()));
 				}
 				catch (Exception ex) {
 					DSUtil.log(string.Format("Could not construct message sound rule from config file '{0}': {1}", Path.GetFileName(file), ex.ToString()));

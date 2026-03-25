@@ -355,6 +355,13 @@ namespace ReikaKalseki.DIDrones {
 			return c.Count() + ":[" + string.Join(delim, c.Select<E, string>(e => stringify(e)).ToArray()) + "]";//return toDebugString((IEnumerable<object>)c);
 		}
 
+		public static string toDebugStringAlt(this Array c, string delim = ",") {
+			List<string> li = new List<string>();
+			foreach (object o in c)
+				li.Add(stringify(o));
+			return c.Length + ":[" + string.Join(delim, li.ToArray()) + "]";
+		}
+
 		public static E pop<E>(this IList<E> c) {
 			E ret = c[0];
 			c.RemoveAt(0);
