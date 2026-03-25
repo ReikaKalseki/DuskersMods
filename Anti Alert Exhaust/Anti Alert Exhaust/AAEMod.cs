@@ -40,7 +40,7 @@ namespace ReikaKalseki.AAE {
 			MessageSoundRule.writeToFileIfNew(folder, "EXAMPLE_TransporterMute", new MessageRegexRule(null, true, new Regex("(?i)transporter[a-zA-Z0-9 ]*signal(?-i)")));
 			MessageSoundRule.writeToFileIfNew(folder, "EXAMPLE_VideoSignalLessAlarming", new MessageRegexRule(GameAudio.SoundEnum.SensorUntriggered.ToString(), false, new Regex("(?i)video[a-zA-Z0-9 ]*signal(?-i)")));
 			foreach (string file in Directory.GetFiles(folder)) {
-				if (file.StartsWith("EXAMPLE_"))
+				if (Path.GetFileName(file).StartsWith("EXAMPLE_"))
 					continue;
 				try {
 					MessageSoundRule rule = MessageSoundRule.readFromFile(file);

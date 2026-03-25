@@ -46,6 +46,7 @@ namespace ReikaKalseki.DIDrones {
 				string meta = cmd.Arguments[cmd.Arguments.Count - 1];
 				Color use = Color.clear;
 				HashSet<string> rooms = new HashSet<string>(cmd.Arguments);
+				bool forceRemove = false;
 				if (DSUtil.roomRegex.IsMatch(meta)) {
 
 				}
@@ -54,6 +55,7 @@ namespace ReikaKalseki.DIDrones {
 					if (meta == "clear") {
 						sound = GameAudio.SoundEnum.FlagRemoved;
 						rooms.Add("*");
+						forceRemove = true;
 					}
 					else if (new Regex("^[0-9a-fA-F]{6}$").IsMatch(meta)) {
 						ColorUtility.TryParseHtmlString("#"+meta, out use);
@@ -66,8 +68,12 @@ namespace ReikaKalseki.DIDrones {
 				}
 				bool any = false;
 				foreach (Room room4 in dm.rooms) {
-					if (rooms.Contains(room4.Label) || rooms.Contains("*"))
-						any |= room4.toggleFlagWithColor(use);
+					if (rooms.Contains(room4.Label) || rooms.Contains("*")) {
+						if (forceRemove)
+							room4.ClearRoomFlag();
+						else
+							any |= room4.toggleFlagWithColor(use);
+					}
 				}
 				if (sound == GameAudio.SoundEnum.None)
 					sound = any ? GameAudio.SoundEnum.FlagPlaced : GameAudio.SoundEnum.FlagRemoved;

@@ -41,6 +41,9 @@ namespace ReikaKalseki.Upgrades {
 					TerminalManager.Instance.hasDefenses = true;
 					TerminalManager.Instance.hasShipScan = true;
 					TerminalManager.Instance.hasSurvey = true;
+					TerminalManager.Instance.filteredCommandDefinitionList.Clear();
+					TerminalManager.Instance.haveFilteredCommandList = false;
+					TerminalManager.Instance.QueryAvailableCommands();
 					SendConsoleResponseMessage("Successfully hacked terminal system in room " + room.Label, ConsoleMessageType.Benefit);
 					return true;
 				}
