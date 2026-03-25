@@ -50,6 +50,7 @@ namespace ReikaKalseki.DIDrones {
 		public void Awake() {
 			DSUtil.log("Begin Initializing "+name, modDLL);
 			try {
+				addAdditionalConfig();
 				config.register();
 
 				applyHarmony();
