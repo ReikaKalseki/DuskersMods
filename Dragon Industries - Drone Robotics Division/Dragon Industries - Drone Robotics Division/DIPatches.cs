@@ -233,6 +233,192 @@ namespace ReikaKalseki.DIDrones {
 				return codes.AsEnumerable();
 			}
 		}
+		/*
+		[HarmonyPatch(typeof(UIShipList))]
+		[HarmonyPatch("Refresh")]
+		public static class ShipUpgradeListUIHook {
+
+			public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
+				List<CodeInstruction> codes = new List<CodeInstruction>();
+				try {
+					codes.Add(new CodeInstruction(OpCodes.Ldarg_0));
+					codes.Add(InstructionHandlers.createMethodCall("ReikaKalseki.DIDrones.DIMod", "rebuildShipUpgradeUIList", new Type[] { typeof(UIShipList) }));
+					codes.Add(new CodeInstruction(OpCodes.Ret));
+					FileLog.Log("Done patch " + MethodBase.GetCurrentMethod().DeclaringType);
+				}
+				catch (Exception e) {
+					FileLog.Log("Caught exception when running patch " + MethodBase.GetCurrentMethod().DeclaringType + "!");
+					FileLog.Log(e.Message);
+					FileLog.Log(e.StackTrace);
+					FileLog.Log(e.ToString());
+				}
+				return codes.AsEnumerable();
+			}
+		}*/
+		/*
+		[HarmonyPatch(typeof(ModificationsHelper))]
+		[HarmonyPatch("GetModificationsForType", typeof(Type))]
+		public static class FetchUpgradesByTypeHook {
+
+			public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
+				List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
+				try {
+					InstructionHandlers.patchEveryReturnPre(codes,
+						new CodeInstruction(OpCodes.Ldarg_0),
+						InstructionHandlers.createMethodCall("ReikaKalseki.DIDrones.DIMod", "onFetchModificationList", new Type[] { typeof(List<IModification>), typeof(Type) })
+					);
+					FileLog.Log("Done patch " + MethodBase.GetCurrentMethod().DeclaringType);
+				}
+				catch (Exception e) {
+					FileLog.Log("Caught exception when running patch " + MethodBase.GetCurrentMethod().DeclaringType + "!");
+					FileLog.Log(e.Message);
+					FileLog.Log(e.StackTrace);
+					FileLog.Log(e.ToString());
+				}
+				return codes.AsEnumerable();
+			}
+		}*//*
+		[HarmonyPatch(typeof(UIShipItem))]
+		[HarmonyPatch("get_ModificationList")]
+		public static class FetchShipUpgradesForUIHook {
+
+			public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
+				List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
+				try {
+					InstructionHandlers.patchEveryReturnPre(codes,
+						new CodeInstruction(OpCodes.Ldarg_0),
+						InstructionHandlers.createMethodCall("ReikaKalseki.DIDrones.DIMod", "onFetchShipModificationList", new Type[] { typeof(List<IModification>), typeof(UIShipItem) })
+					);
+					FileLog.Log("Done patch " + MethodBase.GetCurrentMethod().DeclaringType);
+				}
+				catch (Exception e) {
+					FileLog.Log("Caught exception when running patch " + MethodBase.GetCurrentMethod().DeclaringType + "!");
+					FileLog.Log(e.Message);
+					FileLog.Log(e.StackTrace);
+					FileLog.Log(e.ToString());
+				}
+				return codes.AsEnumerable();
+			}
+		}*/
+		
+		[HarmonyPatch(typeof(UIModListSimple))]
+		[HarmonyPatch("AddBackendItem", typeof(string), typeof(IModification), typeof(bool), typeof(IUIItem))]
+		public static class AddModToUIFix {
+
+			public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
+				List<CodeInstruction> codes = new List<CodeInstruction>();
+				try {
+					codes.Add(new CodeInstruction(OpCodes.Ldarg_0));
+					codes.Add(new CodeInstruction(OpCodes.Ldarg_1));
+					codes.Add(new CodeInstruction(OpCodes.Ldarg_2));
+					codes.Add(new CodeInstruction(OpCodes.Ldarg_3));
+					codes.Add(new CodeInstruction(OpCodes.Ldarg_S, 4));
+					codes.Add(InstructionHandlers.createMethodCall("ReikaKalseki.DIDrones.DIMod", "addBackendModItem", new Type[] { typeof(UIModListSimple), typeof(string), typeof(IModification), typeof(bool), typeof(IUIItem) }));
+					codes.Add(new CodeInstruction(OpCodes.Ret));
+					FileLog.Log("Done patch " + MethodBase.GetCurrentMethod().DeclaringType);
+				}
+				catch (Exception e) {
+					FileLog.Log("Caught exception when running patch " + MethodBase.GetCurrentMethod().DeclaringType + "!");
+					FileLog.Log(e.Message);
+					FileLog.Log(e.StackTrace);
+					FileLog.Log(e.ToString());
+				}
+				return codes.AsEnumerable();
+			}
+		}
+		/*
+		[HarmonyPatch(typeof(DroneBrain))]
+		[HarmonyPatch("ReachedTargetPosition", typeof(Vector3))]
+		public static class DroneTargetPosFix1 {
+
+			public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
+				List<CodeInstruction> codes = new List<CodeInstruction>();
+				try {
+					codes.Add(new CodeInstruction(OpCodes.Ldarg_0));
+					codes.Add(new CodeInstruction(OpCodes.Ldarg_1));
+					codes.Add(InstructionHandlers.createMethodCall("ReikaKalseki.DIDrones.DIMod", "droneReachedPosition", new Type[] { typeof(DroneBrain), typeof(Vector3) }));
+					codes.Add(new CodeInstruction(OpCodes.Ret));
+					FileLog.Log("Done patch " + MethodBase.GetCurrentMethod().DeclaringType);
+				}
+				catch (Exception e) {
+					FileLog.Log("Caught exception when running patch " + MethodBase.GetCurrentMethod().DeclaringType + "!");
+					FileLog.Log(e.Message);
+					FileLog.Log(e.StackTrace);
+					FileLog.Log(e.ToString());
+				}
+				return codes.AsEnumerable();
+			}
+		}*/
+		/*
+		[HarmonyPatch(typeof(UIModCategory))]
+		[HarmonyPatch("AddBackendItem", typeof(GameObject), typeof(IModification), typeof(bool), typeof(IUIItem))]
+		public static class AddModToUIHook2 {
+
+			public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
+				List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
+				try {
+					InstructionHandlers.patchEveryReturnPre(codes,
+						new CodeInstruction(OpCodes.Ldarg_0),
+						new CodeInstruction(OpCodes.Ldarg_1),
+						new CodeInstruction(OpCodes.Ldarg_2),
+						new CodeInstruction(OpCodes.Ldarg_3),
+						new CodeInstruction(OpCodes.Ldarg_S, 4),
+						InstructionHandlers.createMethodCall("ReikaKalseki.DIDrones.DIMod", "onAddBackendModItem2", new Type[] { typeof(bool), typeof(UIModCategory), typeof(GameObject), typeof(IModification), typeof(bool), typeof(IUIItem) })
+					);
+					FileLog.Log("Done patch " + MethodBase.GetCurrentMethod().DeclaringType);
+				}
+				catch (Exception e) {
+					FileLog.Log("Caught exception when running patch " + MethodBase.GetCurrentMethod().DeclaringType + "!");
+					FileLog.Log(e.Message);
+					FileLog.Log(e.StackTrace);
+					FileLog.Log(e.ToString());
+				}
+				return codes.AsEnumerable();
+			}
+		}*/
+		[HarmonyPatch(typeof(Drone))]
+		[HarmonyPatch("Update")]
+		public static class DroneTickHook {
+
+			public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
+				List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
+				try {
+					InstructionHandlers.patchInitialHook(codes,
+						new CodeInstruction(OpCodes.Ldarg_0),
+						InstructionHandlers.createMethodCall("ReikaKalseki.DIDrones.DIMod", "tickDrone", new Type[] { typeof(Drone) })
+					);
+					FileLog.Log("Done patch " + MethodBase.GetCurrentMethod().DeclaringType);
+				}
+				catch (Exception e) {
+					FileLog.Log("Caught exception when running patch " + MethodBase.GetCurrentMethod().DeclaringType + "!");
+					FileLog.Log(e.Message);
+					FileLog.Log(e.StackTrace);
+					FileLog.Log(e.ToString());
+				}
+				return codes.AsEnumerable();
+			}
+		}
+		[HarmonyPatch(typeof(SlotInfo))]
+		[HarmonyPatch("UnInstallUpgrade")]
+		public static class ShipSlotUninstallFixHook {
+
+			public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
+				List<CodeInstruction> codes = new List<CodeInstruction>();
+				try {
+					codes.Add(new CodeInstruction(OpCodes.Ldarg_0));
+					codes.Add(InstructionHandlers.createMethodCall("ReikaKalseki.DIDrones.DIMod", "uninstallShipSlot", new Type[] { typeof(SlotInfo) }));
+					codes.Add(new CodeInstruction(OpCodes.Ret));
+					FileLog.Log("Done patch " + MethodBase.GetCurrentMethod().DeclaringType);
+				}
+				catch (Exception e) {
+					FileLog.Log("Caught exception when running patch " + MethodBase.GetCurrentMethod().DeclaringType + "!");
+					FileLog.Log(e.Message);
+					FileLog.Log(e.StackTrace);
+					FileLog.Log(e.ToString());
+				}
+				return codes.AsEnumerable();
+			}
+		}
 
 		static class PatchLib {
 

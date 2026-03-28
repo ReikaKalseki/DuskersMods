@@ -42,6 +42,8 @@ namespace ReikaKalseki.Upgrades {
 
 			if (config.getBoolean(UEConfig.ConfigEntries.enableModSlot))
 				ModUpgradeManager.Manager.RegisterModificationFor(typeof(NonVisualDrone), new AddDroneSlotMod());
+			if (config.getBoolean(UEConfig.ConfigEntries.enableReplaceSlot))
+				ModUpgradeManager.Manager.RegisterModificationFor(typeof(SlotInfo), new ReplaceShipSlotMod());
 		}
 
 		public static void onCreateUpgrade() {

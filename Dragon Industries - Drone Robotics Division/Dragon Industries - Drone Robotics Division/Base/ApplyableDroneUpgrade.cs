@@ -10,6 +10,8 @@ using JetBrains.Annotations;
 namespace ReikaKalseki.DIDrones {
 	public abstract class ApplyableDroneUpgrade : IModification {
 
+		private static readonly HashSet<Type> registeredTypes = new HashSet<Type>();
+
 		public NonVisualDrone _targetDrone { get; private set; }
 
 		public readonly string name;
@@ -20,6 +22,11 @@ namespace ReikaKalseki.DIDrones {
 			this.name = name;
 			this.description = desc;
 			this.cost = cost;
+			Type t = GetType();
+			if (!registeredTypes.Contains(t)) {
+				DSUtil.log(string.Format("Registered one-off drone upgrade '{0}'='{1}'", t.Name, name));
+				registeredTypes.Add(t);
+			}
 		}
 
 		public string DisplayName {

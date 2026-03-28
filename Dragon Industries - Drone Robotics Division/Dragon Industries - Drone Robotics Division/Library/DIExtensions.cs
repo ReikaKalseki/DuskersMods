@@ -403,6 +403,8 @@ namespace ReikaKalseki.DIDrones {
 		public static string stringify(object obj) {
 			if (obj == null)
 				return "null";
+			else if (obj is IModification mod)
+				return string.Format("IMod {0} '{1}' = {2}", obj.GetType().Name, mod.DisplayName, mod.ToString());
 			else if (obj.isDictionary())
 				return "dict:" + ((IDictionary<object, object>)obj).toDebugString();
 			else if (obj.isEnumerable())

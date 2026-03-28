@@ -27,7 +27,7 @@ namespace ReikaKalseki.Upgrades {
 				return false;
 			}
 			if (target.checkAtElseNavToAndTryAgain(drone, cmd)) {
-				Drone d = (Drone)(target.roomObject);
+				Drone d = (Drone)target.roomObject;
 				int n = d.CanBeTowed ? 7 : UnityEngine.Random.Range(3, 6); //sentry bots are 1-3, drones scrap for 7-9 based on health, so make broken 3-5
 				for (int i = 0; i < n; i++) {
 					DungeonManager.Instance.PlaceLootInRoom(drone.CurrentRoom, false, MathUtil.getRandomVectorAround(drone.transform.position, 0.5F), false);

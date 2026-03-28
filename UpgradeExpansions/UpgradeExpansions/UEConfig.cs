@@ -14,6 +14,7 @@ namespace ReikaKalseki.Upgrades {
 			[ConfigEntry("New Upgrades", "Enable 'dismantle' drone upgrade", true, false)]enableDismantle,
 			[ConfigEntry("New Upgrades", "Enable 'hack' drone upgrade", true, false)]enableHack,
 			[ConfigEntry("Misc", "Enable 'Add modification slot' drone upgrade", true, false)]enableModSlot,
+			[ConfigEntry("Misc", "Enable 'Replace upgrade slot' ship upgrade", true, false)]enableReplaceSlot,
 			[ConfigEntry("Existing Upgrades", "Expand 'pry' drone upgrade to allow removing firm ship upgrades", true, false)]enableUpgradePry,
 		}
 	}

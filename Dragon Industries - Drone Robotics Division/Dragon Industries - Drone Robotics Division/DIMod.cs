@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.IO;
 
@@ -12,6 +13,8 @@ using HarmonyLib;
 using UnityEngine;
 using DSMFramework.Modding;
 using System.Text.RegularExpressions;
+using System.Diagnostics;
+using JetBrains.Annotations;
 
 namespace ReikaKalseki.DIDrones {
 
@@ -118,6 +121,52 @@ namespace ReikaKalseki.DIDrones {
 				DSUtil.log("Item data: name=" + ii.Name + " class=" + ii.GetType().Name + ", inv type=" + Enum.GetName(typeof(InventoryTypeEnum), ii.InventoryType));
 		}
 
+		public static List<IModification> onFetchModificationList(List<IModification> li, Type type) {
+			DSUtil.log(string.Format("Found {2} modifications for type '{0}': {1}\n{3}", type.Name, li.toDebugString(), li.Count, new StackTrace().GetFrames().getTrace()), DSUtil.diDLL);
+			return li;
+		}
+
+		public static List<IModification> onFetchShipModificationList(List<IModification> li, UIShipItem ui) {
+			if (li == null)
+				DSUtil.log("Cached ship mod list was null @ "+new StackTrace().GetFrames().getTrace(), DSUtil.diDLL);
+			else
+				DSUtil.log(string.Format("Cached ship mod list had {1} modifications: {0}\n{2}", li.toDebugString(), li.Count, new StackTrace().GetFrames().getTrace()), DSUtil.diDLL);
+			return li;
+		}
+
+		public static void onAddBackendModItem(UIModListSimple li, string catKey, IModification mod, bool isExclusiveItem, IUIItem originalItem) {
+			DSUtil.log(string.Format("Adding backend mod item {1}/{0} to {2} in {3} with dict {4} and base {5}", DIExtensions.stringify(mod), catKey, originalItem, li, li.categoryDict.toDebugString(), li.gameObject), DSUtil.diDLL);
+		}
+
+		public static bool addBackendModItem(UIModListSimple li, string catKey, IModification mod, bool isExclusiveItem, IUIItem originalItem) {
+			float spaceAvailable = li.GetSpaceAvailable();
+			if (spaceAvailable < 0f) {
+				return false;
+			}
+			bool flag;
+			if (li.categoryDict == null || !li.categoryDict.ContainsKey(catKey)) {
+				if (!li.AddCategory(null, catKey, "Unknown Category")) {
+					return false;
+				}
+				flag = li.categoryDict[catKey].AddBackendItem(li.gameObject, mod, isExclusiveItem, originalItem);
+			}
+			else { //vanilla impl IS A BUG
+				flag = li.categoryDict[catKey].AddBackendItem(/*li.categoryDict[catKey].gameObject*/li.gameObject, mod, isExclusiveItem, originalItem);
+			}
+			if (flag) {
+				li.PostChange();
+			}
+			else {
+				CommonAudioHelper.Instance.PlayErrorSound();
+			}
+			return flag;
+		}
+
+		public static bool onAddBackendModItem2(bool ret, UIModCategory li, GameObject parent, IModification mod, bool isExclusiveItem, IUIItem originalItem) {
+			DSUtil.log(string.Format("Adding backend[2] mod item {1}/{0} to {2} in {3}: {4}", DIExtensions.stringify(mod), parent, originalItem, li, ret), DSUtil.diDLL);
+			return ret;
+		}
+
 		public static void hookDroneSounds(Drone d) {
 			// no longer necessary d.setCallsign(GameAudio.SoundEnum.DroneCS_12);
 		}
@@ -132,6 +181,40 @@ namespace ReikaKalseki.DIDrones {
 		public static void onDroneInListSelected(BoardingConfigDronePanel ui, bool sel) {
 			if (sel && ui.ThisDrone != null) {
 				ui.ThisDrone.playCallsign();
+			}
+		}
+		/*
+		public static bool droneReachedPosition(DroneBrain db, Vector3 pos) {
+			if (!db.ThisDrone)
+				return true;
+			float num = Vector3.Distance(db.ThisDrone.transform.position, pos);
+			if (num <= 0.75f) {
+				return true;
+			}
+			foreach (GameObject go in db.ThisDrone.CollidingObjects) {
+				if (!go)
+					continue;
+				num = Vector3.Distance(go.transform.position, pos);
+				float num2 = Vector3.Distance(go.transform.position, db.ThisDrone.transform.position);
+				if (num <= 0.75f && num2 <= 1.5f)
+					return true;
+			}
+			return false;
+		}*/
+
+		public static void tickDrone(Drone d) {
+			if (d.CollidingObjects != null && d.CollidingObjects.Count > 0)
+				d.CollidingObjects.RemoveAll(go => go != null && !go);
+		}
+
+		public static void uninstallShipSlot(SlotInfo slot) {
+			if (slot.SourceInventory != null) {
+				try {
+					slot.SourceInventory.RemoveInventoryItem(slot.InstalledUpgrade);
+				}
+				catch (Exception e) {
+					DSUtil.log(string.Format("Threw exception trying to remove item '{0}' from slot {1}: {2}", DIExtensions.stringify(slot.InstalledUpgrade), slot, e));
+				}
 			}
 		}
 
