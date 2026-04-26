@@ -106,5 +106,14 @@ namespace ReikaKalseki.Upgrades {
 				}
 			}
 		}
+
+		public static void onInitDroneUI(BoardingConfigSelectedDrone ui) {
+			if (ui.upgradeSlots.Length == 3) {
+				BoardingConfigUpgradeSlot[] arr = new BoardingConfigUpgradeSlot[4];
+				Array.Copy(ui.upgradeSlots, arr, 3);
+				arr[3] = UnityEngine.Object.Instantiate(ui.upgradeSlots[2].gameObject).GetComponent<BoardingConfigUpgradeSlot>();
+				ui.upgradeSlots = arr;
+			}
+		}
 	}
 }

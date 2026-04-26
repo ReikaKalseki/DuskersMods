@@ -15,12 +15,12 @@ namespace ReikaKalseki.DIDrones {
 
 		public override int MaxAllowed {
 			get {
-				return _targetDrone == null ? 2 : 5- _targetDrone.NumberOfUpgradeSlots;
+				return _targetDrone == null ? 2 : 4- _targetDrone.NumberOfUpgradeSlots;
 			}
 		}
 
 		protected override bool isValid(NonVisualDrone drone) {
-			return drone.NumberOfUpgradeSlots < 5;
+			return drone.NumberOfUpgradeSlots < 4;
 		}
 
 		protected override void apply(NonVisualDrone drone) {
